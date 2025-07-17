@@ -1,7 +1,7 @@
 import { ApiResponse, ApiSearchResponse, ApiHealthResponse, Meeting, ApiDocument } from '@/types/api';
 
 // Replace with your actual QNAP public IP/URL
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 class ApiError extends Error {
   constructor(message: string, public status?: number) {
