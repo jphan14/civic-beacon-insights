@@ -4,57 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar, Clock, Users, Search, ExternalLink, AlertCircle, Loader2, RefreshCcw } from "lucide-react";
-import { useAllSummaries } from "@/hooks/useApi";
-import { Meeting } from "@/types/api";
+import { Calendar, Clock, Users, Search, ExternalLink, AlertCircle, Loader2, RefreshCcw, FileText } from "lucide-react";
+import { useCivicSummaries } from "@/hooks/useCivicData";
 
 const MeetingSummaries = () => {
   const [searchTerm, setSearchTerm] = useState("");
   
-  // Fetch real data from API with fallback to sample data
-  const { data: meetings = [], isLoading, error, refetch } = useAllSummaries();
+  // Fetch real data from Railway API
+  const { summaries, statistics, loading: isLoading, error, refetch } = useCivicSummaries();
   
-  // Fallback sample data when API is not available
-  const sampleMeetings: Meeting[] = [
-    {
-      id: "sample-1",
-      title: "City Council Regular Meeting",
-      date: "January 15, 2024",
-      time: "7:00 PM",
-      body: "City Council",
-      topics: ["Budget Review", "Park Development", "Traffic Safety"],
-      summary: "Council reviewed the 2024 budget proposals, discussed the new community park project, and addressed traffic safety concerns on Foothill Boulevard.",
-      attendees: 12,
-      keyDecisions: ["Approved park development budget", "Initiated traffic study"],
-      type: "minutes",
-      aiGenerated: true,
-      status: "Completed",
-      url: "#"
-    },
-    {
-      id: "sample-2", 
-      title: "Planning Commission Meeting",
-      date: "January 10, 2024",
-      time: "6:30 PM",
-      body: "Planning Commission",
-      topics: ["Zoning Changes", "Development Permits", "Environmental Impact"],
-      summary: "Commission reviewed three development applications, discussed proposed zoning amendments, and evaluated environmental impact assessments.",
-      attendees: 8,
-      keyDecisions: ["Approved residential development permit", "Recommended zoning amendment"],
-      type: "agenda",
-      aiGenerated: true,
-      status: "Completed",
-      url: "#"
-    }
-  ];
-  
-  // Use API data if available, otherwise show sample data
-  const displayMeetings = meetings.length > 0 ? meetings : sampleMeetings;
-
-  const filteredMeetings = displayMeetings.filter(meeting =>
+  // Filter summaries based on search term
+  const filteredMeetings = summaries.filter(meeting =>
     meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    meeting.topics.some(topic => topic.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    meeting.summary.toLowerCase().includes(searchTerm.toLowerCase())
+    meeting.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    meeting.government_body.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -99,7 +62,7 @@ const MeetingSummaries = () => {
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span>Failed to load meeting summaries: {error.message}</span>
+                <span>Failed to load meeting summaries: {error}</span>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -111,21 +74,47 @@ const MeetingSummaries = () => {
                 </Button>
               </div>
               <div className="text-sm text-muted-foreground mt-2">
-                <strong>Note:</strong> To connect to your QNAP API, create a <code>.env</code> file with: 
+                <strong>Connected to Railway API:</strong> 
                 <br />
-                <code>VITE_API_URL=http://YOUR_PUBLIC_IP:5000</code>
+                <code>https://web-production-8730.up.railway.app</code>
                 <br />
-                Currently showing sample data instead.
+                {statistics?.total_documents && (
+                  <span>Found {statistics.total_documents} documents from {statistics.government_bodies} government bodies</span>
+                )}
               </div>
             </AlertDescription>
           </Alert>
+        )}
+
+        {/* Statistics Display */}
+        {!isLoading && !error && statistics?.total_documents && (
+          <div className="mb-8 p-6 bg-muted/50 rounded-lg">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              <div>
+                <div className="text-3xl font-bold text-primary">{statistics.total_documents}</div>
+                <div className="text-sm text-muted-foreground">Total Documents</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-primary">{statistics.government_bodies}</div>
+                <div className="text-sm text-muted-foreground">Government Bodies</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-primary">{statistics.ai_summaries}</div>
+                <div className="text-sm text-muted-foreground">AI Summaries</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-primary">{statistics.recent_updates}</div>
+                <div className="text-sm text-muted-foreground">Recent Updates</div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Meeting Cards */}
         <div className="space-y-6">
           {filteredMeetings.map((meeting, index) => (
             <Card 
-              key={meeting.id} 
+              key={meeting.created_at + index} 
               className="hover:shadow-card transition-all duration-300 border-border/50 animate-fade-in"
               style={{ animationDelay: `${index * 100}ms` }}
             >
@@ -144,21 +133,17 @@ const MeetingSummaries = () => {
                         })}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        <span>{meeting.time}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
                         <Users className="h-4 w-4" />
-                        <span>{meeting.attendees} attendees</span>
+                        <span>{meeting.government_body}</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge variant="secondary">{meeting.body}</Badge>
-                    <Badge variant="outline">{meeting.type}</Badge>
-                    {meeting.aiGenerated && (
+                    <Badge variant="secondary">{meeting.government_body}</Badge>
+                    <Badge variant="outline">{meeting.document_type}</Badge>
+                    {meeting.ai_generated && (
                       <Badge variant="default" className="bg-accent text-accent-foreground">
-                        AI Summary
+                        AI Generated
                       </Badge>
                     )}
                   </div>
@@ -166,50 +151,21 @@ const MeetingSummaries = () => {
               </CardHeader>
               
               <CardContent className="space-y-6">
-                {/* Topics */}
-                <div>
-                  <h4 className="font-semibold text-foreground mb-2">Topics Discussed</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {meeting.topics.map((topic) => (
-                      <Badge key={topic} variant="outline" className="text-primary border-primary/30">
-                        {topic}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Summary */}
                 <div>
                   <h4 className="font-semibold text-foreground mb-2">Summary</h4>
                   <p className="text-muted-foreground leading-relaxed">{meeting.summary}</p>
                 </div>
 
-                {/* Key Decisions */}
-                <div>
-                  <h4 className="font-semibold text-foreground mb-2">Key Decisions</h4>
-                  <ul className="space-y-1">
-                    {meeting.keyDecisions.map((decision, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-muted-foreground">
-                        <span className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></span>
-                        <span>{decision}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-4 border-t border-border/50">
-                  {meeting.url && (
-                    <Button 
-                      className="bg-primary hover:bg-primary/90"
-                      onClick={() => window.open(meeting.url, '_blank')}
-                    >
-                      View Full Document
-                      <ExternalLink className="ml-2 h-4 w-4" />
-                    </Button>
-                  )}
                   <Button variant="outline">
-                    View {meeting.type === 'agenda' ? 'Agenda' : 'Minutes'}
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    View Full Document
+                  </Button>
+                  <Button variant="outline">
+                    <FileText className="mr-2 h-4 w-4" />
+                    View {meeting.document_type === 'agenda' ? 'Agenda' : 'Minutes'}
                   </Button>
                 </div>
               </CardContent>
@@ -217,8 +173,9 @@ const MeetingSummaries = () => {
           ))}
         </div>
 
-        {!isLoading && !error && filteredMeetings.length === 0 && meetings.length > 0 && (
+        {!isLoading && !error && filteredMeetings.length === 0 && summaries.length > 0 && (
           <div className="text-center py-12">
+            <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-xl text-muted-foreground">No meetings found matching your search criteria.</p>
             <Button 
               variant="outline" 
@@ -230,8 +187,9 @@ const MeetingSummaries = () => {
           </div>
         )}
 
-        {!isLoading && !error && meetings.length === 0 && (
+        {!isLoading && !error && summaries.length === 0 && (
           <div className="text-center py-12">
+            <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-xl text-muted-foreground">No meeting summaries available.</p>
             <p className="text-muted-foreground mt-2">Check your API connection or try again later.</p>
             <Button 
