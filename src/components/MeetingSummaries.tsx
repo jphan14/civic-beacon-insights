@@ -3,50 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Users, Search, ExternalLink } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Calendar, Clock, Users, Search, ExternalLink, AlertCircle, Loader2, RefreshCcw } from "lucide-react";
+import { useAllSummaries } from "@/hooks/useApi";
+import { Meeting } from "@/types/api";
 
 const MeetingSummaries = () => {
   const [searchTerm, setSearchTerm] = useState("");
-
-  // Sample meeting data - in real app this would come from API
-  const meetings = [
-    {
-      id: 1,
-      title: "City Council Regular Meeting",
-      date: "2024-01-15",
-      time: "7:00 PM",
-      type: "City Council",
-      topics: ["Budget Review", "Park Development", "Traffic Safety"],
-      summary: "Council reviewed the 2024 budget proposals, discussed the new community park project, and addressed traffic safety concerns on Foothill Boulevard.",
-      attendees: 12,
-      keyDecisions: ["Approved park development budget", "Initiated traffic study"],
-      status: "Completed"
-    },
-    {
-      id: 2,
-      title: "Planning Commission Meeting",
-      date: "2024-01-10",
-      time: "6:30 PM",
-      type: "Planning Commission",
-      topics: ["Zoning Changes", "Development Permits", "Environmental Impact"],
-      summary: "Commission reviewed three development applications, discussed proposed zoning amendments, and evaluated environmental impact assessments.",
-      attendees: 8,
-      keyDecisions: ["Approved residential development permit", "Recommended zoning amendment"],
-      status: "Completed"
-    },
-    {
-      id: 3,
-      title: "Public Safety Committee",
-      date: "2024-01-08",
-      time: "4:00 PM",
-      type: "Committee",
-      topics: ["Emergency Preparedness", "Fire Safety", "Police Services"],
-      summary: "Committee discussed emergency preparedness initiatives, reviewed fire safety protocols, and evaluated police service coverage areas.",
-      attendees: 6,
-      keyDecisions: ["Enhanced emergency communication plan", "Updated fire evacuation routes"],
-      status: "Completed"
-    }
-  ];
+  
+  // Fetch real data from API
+  const { data: meetings = [], isLoading, error, refetch } = useAllSummaries();
 
   const filteredMeetings = meetings.filter(meeting =>
     meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -77,9 +43,37 @@ const MeetingSummaries = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-12 pr-4 py-6 text-lg rounded-xl border-border/50 focus:border-primary"
+              disabled={isLoading}
             />
           </div>
         </div>
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-3 text-lg text-muted-foreground">Loading meeting summaries...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <Alert className="mb-8 border-destructive/50 text-destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>Failed to load meeting summaries: {error.message}</span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => refetch()}
+                className="ml-4"
+              >
+                <RefreshCcw className="h-4 w-4 mr-2" />
+                Retry
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Meeting Cards */}
         <div className="space-y-6">
@@ -114,13 +108,13 @@ const MeetingSummaries = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge variant="secondary">{meeting.type}</Badge>
-                    <Badge 
-                      variant={meeting.status === 'Completed' ? 'default' : 'outline'}
-                      className={meeting.status === 'Completed' ? 'bg-accent text-accent-foreground' : ''}
-                    >
-                      {meeting.status}
-                    </Badge>
+                    <Badge variant="secondary">{meeting.body}</Badge>
+                    <Badge variant="outline">{meeting.type}</Badge>
+                    {meeting.aiGenerated && (
+                      <Badge variant="default" className="bg-accent text-accent-foreground">
+                        AI Summary
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -159,12 +153,17 @@ const MeetingSummaries = () => {
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-4 border-t border-border/50">
-                  <Button className="bg-primary hover:bg-primary/90">
-                    View Full Summary
-                    <ExternalLink className="ml-2 h-4 w-4" />
-                  </Button>
+                  {meeting.url && (
+                    <Button 
+                      className="bg-primary hover:bg-primary/90"
+                      onClick={() => window.open(meeting.url, '_blank')}
+                    >
+                      View Full Document
+                      <ExternalLink className="ml-2 h-4 w-4" />
+                    </Button>
+                  )}
                   <Button variant="outline">
-                    View Original Documents
+                    View {meeting.type === 'agenda' ? 'Agenda' : 'Minutes'}
                   </Button>
                 </div>
               </CardContent>
@@ -172,18 +171,41 @@ const MeetingSummaries = () => {
           ))}
         </div>
 
-        {filteredMeetings.length === 0 && (
+        {!isLoading && !error && filteredMeetings.length === 0 && meetings.length > 0 && (
           <div className="text-center py-12">
             <p className="text-xl text-muted-foreground">No meetings found matching your search criteria.</p>
+            <Button 
+              variant="outline" 
+              className="mt-4" 
+              onClick={() => setSearchTerm("")}
+            >
+              Clear Search
+            </Button>
           </div>
         )}
 
-        {/* Load More */}
-        <div className="text-center mt-12">
-          <Button variant="outline" size="lg">
-            Load More Meetings
-          </Button>
-        </div>
+        {!isLoading && !error && meetings.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-xl text-muted-foreground">No meeting summaries available.</p>
+            <p className="text-muted-foreground mt-2">Check your API connection or try again later.</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => refetch()}
+            >
+              <RefreshCcw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+        )}
+
+        {!isLoading && !error && filteredMeetings.length > 0 && (
+          <div className="text-center mt-12">
+            <Button variant="outline" size="lg">
+              Load More Meetings
+            </Button>
+          </div>
+        )}
       </div>
     </section>
   );
