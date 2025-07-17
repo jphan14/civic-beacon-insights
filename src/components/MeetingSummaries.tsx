@@ -11,10 +11,47 @@ import { Meeting } from "@/types/api";
 const MeetingSummaries = () => {
   const [searchTerm, setSearchTerm] = useState("");
   
-  // Fetch real data from API
+  // Fetch real data from API with fallback to sample data
   const { data: meetings = [], isLoading, error, refetch } = useAllSummaries();
+  
+  // Fallback sample data when API is not available
+  const sampleMeetings: Meeting[] = [
+    {
+      id: "sample-1",
+      title: "City Council Regular Meeting",
+      date: "January 15, 2024",
+      time: "7:00 PM",
+      body: "City Council",
+      topics: ["Budget Review", "Park Development", "Traffic Safety"],
+      summary: "Council reviewed the 2024 budget proposals, discussed the new community park project, and addressed traffic safety concerns on Foothill Boulevard.",
+      attendees: 12,
+      keyDecisions: ["Approved park development budget", "Initiated traffic study"],
+      type: "minutes",
+      aiGenerated: true,
+      status: "Completed",
+      url: "#"
+    },
+    {
+      id: "sample-2", 
+      title: "Planning Commission Meeting",
+      date: "January 10, 2024",
+      time: "6:30 PM",
+      body: "Planning Commission",
+      topics: ["Zoning Changes", "Development Permits", "Environmental Impact"],
+      summary: "Commission reviewed three development applications, discussed proposed zoning amendments, and evaluated environmental impact assessments.",
+      attendees: 8,
+      keyDecisions: ["Approved residential development permit", "Recommended zoning amendment"],
+      type: "agenda",
+      aiGenerated: true,
+      status: "Completed",
+      url: "#"
+    }
+  ];
+  
+  // Use API data if available, otherwise show sample data
+  const displayMeetings = meetings.length > 0 ? meetings : sampleMeetings;
 
-  const filteredMeetings = meetings.filter(meeting =>
+  const filteredMeetings = displayMeetings.filter(meeting =>
     meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     meeting.topics.some(topic => topic.toLowerCase().includes(searchTerm.toLowerCase())) ||
     meeting.summary.toLowerCase().includes(searchTerm.toLowerCase())
@@ -60,17 +97,26 @@ const MeetingSummaries = () => {
         {error && (
           <Alert className="mb-8 border-destructive/50 text-destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>Failed to load meeting summaries: {error.message}</span>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => refetch()}
-                className="ml-4"
-              >
-                <RefreshCcw className="h-4 w-4 mr-2" />
-                Retry
-              </Button>
+            <AlertDescription className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span>Failed to load meeting summaries: {error.message}</span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => refetch()}
+                  className="ml-4"
+                >
+                  <RefreshCcw className="h-4 w-4 mr-2" />
+                  Retry
+                </Button>
+              </div>
+              <div className="text-sm text-muted-foreground mt-2">
+                <strong>Note:</strong> To connect to your QNAP API, create a <code>.env</code> file with: 
+                <br />
+                <code>VITE_API_URL=http://YOUR_PUBLIC_IP:5000</code>
+                <br />
+                Currently showing sample data instead.
+              </div>
             </AlertDescription>
           </Alert>
         )}
