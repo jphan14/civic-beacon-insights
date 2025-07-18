@@ -1,14 +1,16 @@
 // LCF Civic Summaries API Service
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://web-production-8730.up.railway.app';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://hueyphanclub.myqnapcloud.com:8080';
 
 export interface CivicSummary {
-  government_body: string;
-  document_type: string;
-  date: string;
+  id: string;
   title: string;
+  government_body: string;
+  meeting_date: string;
+  document_type: string;
   summary: string;
   ai_generated: boolean;
   created_at: string;
+  pdf_url?: string;
 }
 
 export interface CivicStatistics {

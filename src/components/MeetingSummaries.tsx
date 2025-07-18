@@ -74,9 +74,9 @@ const MeetingSummaries = () => {
                 </Button>
               </div>
               <div className="text-sm text-muted-foreground mt-2">
-                <strong>Connected to Railway API:</strong> 
+                <strong>Connected to QNAP API:</strong> 
                 <br />
-                <code>https://web-production-8730.up.railway.app</code>
+                <code>https://hueyphanclub.myqnapcloud.com:8080</code>
                 <br />
                 {statistics?.total_documents && (
                   <span>Found {statistics.total_documents} documents from {statistics.government_bodies} government bodies</span>
@@ -114,7 +114,7 @@ const MeetingSummaries = () => {
         <div className="space-y-6">
           {filteredMeetings.map((meeting, index) => (
             <Card 
-              key={meeting.created_at + index} 
+              key={meeting.id || meeting.created_at + index} 
               className="hover:shadow-card transition-all duration-300 border-border/50 animate-fade-in"
               style={{ animationDelay: `${index * 100}ms` }}
             >
@@ -125,12 +125,12 @@ const MeetingSummaries = () => {
                     <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
-                        <span>{new Date(meeting.date).toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })}</span>
+                         <span>{new Date(meeting.meeting_date).toLocaleDateString('en-US', { 
+                           weekday: 'long', 
+                           year: 'numeric', 
+                           month: 'long', 
+                           day: 'numeric' 
+                         })}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4" />
