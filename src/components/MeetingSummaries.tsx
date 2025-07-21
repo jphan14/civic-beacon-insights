@@ -20,6 +20,60 @@ const MeetingSummaries = () => {
     meeting.government_body.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Function to format summary text with enumerated headings
+  const formatSummaryText = (text: string) => {
+    // Split by common patterns that indicate new sections
+    const sections = text.split(/(?=\d+\.\s|\n\d+\.\s|(?:^|\n)(?:[A-Z][^.]*:)|\n(?=[A-Z][A-Z\s]+:))/);
+    
+    return sections.map((section, index) => {
+      if (!section.trim()) return null;
+      
+      const trimmedSection = section.trim();
+      
+      // Check if this section starts with a number (already enumerated)
+      const isNumbered = /^\d+\.\s/.test(trimmedSection);
+      
+      // Check if this section starts with a heading pattern (all caps or title case with colon)
+      const isHeading = /^[A-Z][A-Z\s]*:/.test(trimmedSection) || /^[A-Z][^.]*:/.test(trimmedSection);
+      
+      if (isNumbered || isHeading) {
+        const [heading, ...contentParts] = trimmedSection.split(/:\s?/);
+        const content = contentParts.join(': ');
+        
+        return (
+          <div key={index} className="mb-4">
+            <h5 className="font-semibold text-foreground mb-2 flex items-center">
+              {!isNumbered && <span className="text-primary mr-2">{index + 1}.</span>}
+              {heading}{heading.endsWith(':') ? '' : ':'}
+            </h5>
+            {content && (
+              <p className="text-muted-foreground leading-relaxed pl-6">{content}</p>
+            )}
+          </div>
+        );
+      }
+      
+      // For regular paragraphs, add enumeration if it's a significant section
+      if (trimmedSection.length > 50) {
+        return (
+          <div key={index} className="mb-4">
+            <h5 className="font-semibold text-foreground mb-2 flex items-center">
+              <span className="text-primary mr-2">{index + 1}.</span>
+              Summary Section
+            </h5>
+            <p className="text-muted-foreground leading-relaxed pl-6">{trimmedSection}</p>
+          </div>
+        );
+      }
+      
+      return (
+        <p key={index} className="text-muted-foreground leading-relaxed mb-2">
+          {trimmedSection}
+        </p>
+      );
+    }).filter(Boolean);
+  };
+
   return (
     <section id="summaries" className="py-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -76,7 +130,7 @@ const MeetingSummaries = () => {
               <div className="text-sm text-muted-foreground mt-2">
                 <strong>Connected to QNAP API:</strong> 
                 <br />
-                <code>https://hueyphanclub.myqnapcloud.com:8080</code>
+                <code>https://hueyphanclub.myqnapcloud.com:8443</code>
                 <br />
                 {statistics?.total_documents && (
                   <span>Found {statistics.total_documents} documents from {statistics.government_bodies} government bodies</span>
@@ -151,10 +205,12 @@ const MeetingSummaries = () => {
               </CardHeader>
               
               <CardContent className="space-y-6">
-                {/* Summary */}
+                {/* Enhanced Summary with Enumerated Headings */}
                 <div>
-                  <h4 className="font-semibold text-foreground mb-2">Summary</h4>
-                  <p className="text-muted-foreground leading-relaxed">{meeting.summary}</p>
+                  <h4 className="font-semibold text-foreground mb-4 text-lg">Meeting Summary</h4>
+                  <div className="space-y-4">
+                    {formatSummaryText(meeting.summary)}
+                  </div>
                 </div>
 
                 {/* Action Buttons */}
