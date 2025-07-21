@@ -1,22 +1,13 @@
 // LCF Civic Summaries API Service
 
-// Mobile-friendly API configuration
+// Mobile detection and API URL selection
 const isMobile = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
-const getApiUrl = () => {
-  if (isMobile()) {
-    // Use HTTP for mobile to avoid certificate issues
-    return 'http://hueyphanclub.myqnapcloud.com:8080';
-  } else {
-    // Use HTTPS for desktop
-    return 'https://hueyphanclub.myqnapcloud.com:8443';
-  }
-};
-
-// Use in your API calls
-const API_BASE_URL = getApiUrl();
+const API_BASE_URL = isMobile() 
+  ? 'http://hueyphanclub.myqnapcloud.com:8080'   // HTTP for mobile
+  : 'https://hueyphanclub.myqnapcloud.com:8443'; // HTTPS for desktop
 
 export interface CivicSummary {
   id: string;
