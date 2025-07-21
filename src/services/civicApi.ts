@@ -7,11 +7,11 @@ const isMobile = () => {
 
 const getApiUrl = () => {
   if (isMobile()) {
-    // Use HTTP for mobile to avoid certificate issues
-    return 'http://hueyphanclub.myqnapcloud.com:8080';
+    // Use mobile API URL (HTTP) to avoid certificate issues
+    return import.meta.env.VITE_API_URL_MOBILE || 'http://hueyphanclub.myqnapcloud.com:8080';
   } else {
-    // Use HTTPS for desktop
-    return 'https://hueyphanclub.myqnapcloud.com:8443';
+    // Use desktop API URL (HTTPS)
+    return import.meta.env.VITE_API_URL_DESKTOP || 'https://hueyphanclub.myqnapcloud.com:8443';
   }
 };
 
