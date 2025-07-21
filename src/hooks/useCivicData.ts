@@ -12,11 +12,8 @@ export const useCivicSummaries = () => {
       setLoading(true);
       setError(null);
       
-      // Mobile detection and URL selection
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const baseUrl = isMobile 
-        ? 'http://hueyphanclub.myqnapcloud.com:8080'   // HTTP for mobile
-        : 'https://hueyphanclub.myqnapcloud.com:8443'; // HTTPS for desktop
+      // Use HTTPS for all devices - HTTP may be blocked by mixed content policy
+      const baseUrl = 'https://hueyphanclub.myqnapcloud.com:8443';
       
       const url = `${baseUrl}/api/summaries?_t=${Date.now()}`;
       
