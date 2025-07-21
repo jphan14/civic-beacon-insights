@@ -82,18 +82,33 @@ class CivicApiService {
   }
 
   private async fetchWithErrorHandling(endpoint: string): Promise<any> {
-    try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+    const endpoints = [
+      `https://hueyphanclub.myqnapcloud.com:8443${endpoint}`,
+      `http://hueyphanclub.myqnapcloud.com:8080${endpoint}`
+    ];
+    
+    for (const url of endpoints) {
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          // Add timeout for mobile
+          signal: AbortSignal.timeout(10000)
+        });
+        
+        if (response.ok) {
+          return await response.json();
+        }
+      } catch (error) {
+        console.log(`Failed to fetch from ${url}:`, error);
+        continue;
       }
-      
-      return await response.json();
-    } catch (error) {
-      console.error(`API Error for ${endpoint}:`, error);
-      throw error;
     }
+    
+    throw new Error('All API endpoints failed');
   }
 
   private async fetchWithRetry(endpoint: string, retries = 3): Promise<any> {
