@@ -40,7 +40,11 @@ export const useCivicSummaries = () => {
       setStatistics(data.statistics || {} as CivicStatistics);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch summaries';
-      setError(errorMessage);
+      console.log('=== HOOK ERROR ===');
+      console.log('Error:', err);
+      console.log('Error message:', errorMessage);
+      console.log('=================');
+      setError(`Load failed: ${errorMessage}`);
       setSummaries([]);
       console.error('Hook fetch error:', err);
     } finally {
