@@ -7,23 +7,52 @@ export const useCivicSummaries = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refetch = async () => {
+  const fetchSummariesDirect = async () => {
     try {
       setLoading(true);
-      const data = await civicApi.getCurrentSummaries();
+      setError(null);
+      
+      // Direct mobile detection and URL selection
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const baseUrl = isMobile 
+        ? 'http://hueyphanclub.myqnapcloud.com:8080'
+        : 'https://hueyphanclub.myqnapcloud.com:8443';
+      
+      const url = `${baseUrl}/api/summaries?_t=${Date.now()}`;
+      
+      console.log('=== HOOK DIRECT FETCH ===');
+      console.log('Mobile:', isMobile);
+      console.log('URL:', url);
+      console.log('========================');
+      
+      const response = await fetch(url, {
+        cache: 'no-cache',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
       setSummaries(data.summaries || []);
       setStatistics(data.statistics || {} as CivicStatistics);
-      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch summaries');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch summaries';
+      setError(errorMessage);
       setSummaries([]);
+      console.error('Hook fetch error:', err);
     } finally {
       setLoading(false);
     }
   };
 
+  const refetch = async () => {
+    await fetchSummariesDirect();
+  };
+
   useEffect(() => {
-    refetch();
+    fetchSummariesDirect();
   }, []);
 
   return { summaries, statistics, loading, error, refetch };
