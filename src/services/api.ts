@@ -1,175 +1,70 @@
-import { ApiResponse, ApiSearchResponse, ApiHealthResponse, Meeting, ApiDocument } from '@/types/api';
-
-// Replace with your actual QNAP public IP/URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-class ApiError extends Error {
-  constructor(message: string, public status?: number) {
-    super(message);
-    this.name = 'ApiError';
+/**
+ * Detects if the user is on a mobile device.
+ * @returns {boolean} - True if on mobile, false otherwise.
+ */
+const isMobile = (): boolean => {
+  if (typeof navigator === 'undefined') {
+    return false;
   }
-}
+  // A standard regex to detect most mobile and tablet user agents
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
 
-async function fetchApi<T>(endpoint: string): Promise<T> {
+/**
+ * Gets the correct API base URL based on the device.
+ * @returns {string} - The API URL (HTTP for mobile, HTTPS for desktop).
+ */
+const getApiBaseUrl = (): string => {
+  if (isMobile()) {
+    console.log("📱 Mobile device detected. Using HTTP endpoint: http://hueyphanclub.myqnapcloud.com:8080");
+    return 'http://hueyphanclub.myqnapcloud.com:8080';
+  } else {
+    console.log("💻 Desktop device detected. Using HTTPS endpoint: https://hueyphanclub.myqnapcloud.com:8443");
+    return 'https://hueyphanclub.myqnapcloud.com:8443';
+  }
+};
+
+// The single, configured API URL for the entire app to use
+const API_BASE_URL = getApiBaseUrl();
+
+/**
+ * Fetches the meeting summaries from the correct endpoint.
+ * Includes a 15-second timeout for network reliability.
+ * @returns {Promise<object>} - The JSON response from the API.
+ */
+export const fetchMeetingSummaries = async () => {
+  const url = `${API_BASE_URL}/api/summaries`;
+  console.log(`📡 Fetching summaries from: ${url}`);
+
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: 'GET',
+    // AbortController is used to set a timeout for the fetch request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.error("Request timed out after 15 seconds.");
+      controller.abort();
+    }, 15000); // 15-second timeout
+
+    const response = await fetch(url, {
+      signal: controller.signal,
       headers: {
-        'Content-Type': 'application/json',
-      },
+        'Accept': 'application/json',
+      }
     });
 
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
-      throw new ApiError(
-        `API request failed: ${response.status} ${response.statusText}`,
-        response.status
-      );
+      console.error(`API request failed with status ${response.status}`);
+      throw new Error(`API request failed with status ${response.status}`);
     }
 
     const data = await response.json();
-    
-    if (!data.success) {
-      throw new ApiError('API returned unsuccessful response');
-    }
-
+    console.log("✅ Summaries loaded successfully.");
     return data;
+
   } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    
-    // Network or other errors
-    throw new ApiError(
-      error instanceof Error ? error.message : 'Unknown error occurred'
-    );
+    console.error("❌ Failed to fetch meeting summaries:", error);
+    // Re-throw the error so the UI component knows the request failed
+    throw error;
   }
-}
-
-// Transform API document to Meeting format for UI compatibility
-function transformApiDocumentToMeeting(doc: ApiDocument): Meeting {
-  // Extract topics from summary (simple approach - you can enhance this)
-  const topics = extractTopicsFromSummary(doc.summary);
-  const keyDecisions = extractDecisionsFromSummary(doc.summary);
-  
-  return {
-    id: doc.id,
-    title: doc.title,
-    date: new Date(doc.date).toLocaleDateString(),
-    time: new Date(doc.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    attendees: 0, // Not available in API
-    topics,
-    summary: doc.summary,
-    keyDecisions,
-    body: doc.body,
-    type: doc.type,
-    aiGenerated: doc.ai_generated,
-    url: doc.url,
-    status: 'Completed', // Default status
-  };
-}
-
-// Helper function to extract topics from summary (basic implementation)
-function extractTopicsFromSummary(summary: string): string[] {
-  // Look for common patterns in summaries to extract topics
-  const commonTopics = [
-    'Budget', 'Zoning', 'Development', 'Traffic', 'Parks', 'Public Safety',
-    'Planning', 'Environment', 'Transportation', 'Housing', 'Emergency',
-    'Fire Safety', 'Police', 'Infrastructure', 'Community'
-  ];
-  
-  return commonTopics.filter(topic => 
-    summary.toLowerCase().includes(topic.toLowerCase())
-  ).slice(0, 4); // Limit to 4 topics
-}
-
-// Helper function to extract decisions from summary (basic implementation)
-function extractDecisionsFromSummary(summary: string): string[] {
-  // Look for decision indicators in the summary
-  const decisionPatterns = [
-    /approved?\s+([^.]+)/gi,
-    /voted?\s+to\s+([^.]+)/gi,
-    /decided?\s+to\s+([^.]+)/gi,
-    /passed?\s+([^.]+)/gi,
-  ];
-  
-  const decisions: string[] = [];
-  
-  decisionPatterns.forEach(pattern => {
-    const matches = summary.match(pattern);
-    if (matches) {
-      matches.forEach(match => {
-        decisions.push(match.charAt(0).toUpperCase() + match.slice(1));
-      });
-    }
-  });
-  
-  return decisions.slice(0, 3); // Limit to 3 decisions
-}
-
-export const apiService = {
-  // Health check
-  async checkHealth(): Promise<ApiHealthResponse> {
-    return fetchApi<ApiHealthResponse>('/api/health');
-  },
-
-  // Get current summaries
-  async getCurrentSummaries(): Promise<Meeting[]> {
-    const response = await fetchApi<ApiResponse>('/api/current');
-    const meetings: Meeting[] = [];
-    
-    // Transform API response to Meeting format
-    Object.entries(response.data).forEach(([bodyName, bodyData]) => {
-      [...bodyData.agendas, ...bodyData.minutes].forEach(doc => {
-        meetings.push(transformApiDocumentToMeeting(doc));
-      });
-    });
-    
-    // Sort by date (newest first)
-    return meetings.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  },
-
-  // Get archive data
-  async getArchiveSummaries(): Promise<Meeting[]> {
-    const response = await fetchApi<ApiResponse>('/api/archive');
-    const meetings: Meeting[] = [];
-    
-    Object.entries(response.data).forEach(([bodyName, bodyData]) => {
-      [...bodyData.agendas, ...bodyData.minutes].forEach(doc => {
-        meetings.push(transformApiDocumentToMeeting(doc));
-      });
-    });
-    
-    return meetings.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  },
-
-  // Get all data
-  async getAllSummaries(): Promise<Meeting[]> {
-    const response = await fetchApi<ApiResponse>('/api/all');
-    const meetings: Meeting[] = [];
-    
-    Object.entries(response.data).forEach(([bodyName, bodyData]) => {
-      [...bodyData.agendas, ...bodyData.minutes].forEach(doc => {
-        meetings.push(transformApiDocumentToMeeting(doc));
-      });
-    });
-    
-    return meetings.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  },
-
-  // Search
-  async searchDocuments(query: string, body?: string, type?: string): Promise<Meeting[]> {
-    const params = new URLSearchParams({ q: query });
-    if (body) params.append('body', body);
-    if (type) params.append('type', type);
-    
-    const response = await fetchApi<ApiSearchResponse>(`/api/search?${params.toString()}`);
-    
-    return response.data.map(transformApiDocumentToMeeting);
-  },
-
-  // Get government bodies
-  async getGovernmentBodies(): Promise<string[]> {
-    const response = await fetchApi<{ success: boolean; data: string[] }>('/api/bodies');
-    return response.data;
-  },
 };

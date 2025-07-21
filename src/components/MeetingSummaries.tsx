@@ -6,40 +6,56 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Calendar, Clock, Users, Search, ExternalLink, AlertCircle, Loader2, RefreshCcw, FileText, ChevronDown, ChevronUp } from "lucide-react";
-import { useCivicSummaries } from "@/hooks/useCivicData";
+import { fetchMeetingSummaries } from "@/services/api";
+import type { Meeting } from "@/types/api";
 
 const MeetingSummaries = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedMeetings, setExpandedMeetings] = useState<Set<string>>(new Set());
-  const [debugDetails, setDebugDetails] = useState<string[]>([]);
-  
-  // Capture console logs for mobile debugging
+  const [summaries, setSummaries] = useState<Meeting[]>([]);
+  const [statistics, setStatistics] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load summaries using the new mobile-aware API service
   useEffect(() => {
-    const originalLog = console.log;
-    const logs: string[] = [];
-    
-    console.log = (...args) => {
-      const message = args.map(arg => 
-        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-      ).join(' ');
-      logs.push(message);
-      setDebugDetails([...logs].slice(-10)); // Keep last 10 logs
-      originalLog(...args);
+    const loadSummaries = async () => {
+      try {
+        console.log("Attempting to load meeting summaries...");
+        setIsLoading(true);
+        setError(null);
+        const data = await fetchMeetingSummaries();
+        setSummaries(data.summaries || []);
+        setStatistics(data.statistics || {});
+      } catch (err) {
+        setError('Failed to load meeting summaries. Please check your connection and try again.');
+      } finally {
+        setIsLoading(false);
+      }
     };
-    
-    return () => {
-      console.log = originalLog;
-    };
+
+    loadSummaries();
   }, []);
-  
-  // Fetch real data from API
-  const { summaries, statistics, loading: isLoading, error, refetch } = useCivicSummaries();
+
+  const refetch = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await fetchMeetingSummaries();
+      setSummaries(data.summaries || []);
+      setStatistics(data.statistics || {});
+    } catch (err) {
+      setError('Failed to load meeting summaries. Please check your connection and try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   // Filter summaries based on search term
   const filteredMeetings = summaries.filter(meeting =>
     meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     meeting.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    meeting.government_body.toLowerCase().includes(searchTerm.toLowerCase())
+    meeting.body.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Toggle expanded state for a meeting
@@ -180,25 +196,6 @@ const MeetingSummaries = () => {
           </div>
         )}
 
-        
-        {/* Debug Status Display */}
-        <div className="mb-4 p-4 bg-blue-100 border border-blue-300 rounded-lg text-sm">
-          <div><strong>Debug Status:</strong></div>
-          <div>Loading: {isLoading ? 'Yes' : 'No'}</div>
-          <div>Error: {error || 'None'}</div>
-          <div>Summaries Count: {summaries?.length || 0}</div>
-          <div>Statistics: {statistics?.total_documents || 0} docs from {statistics?.government_bodies || 0} bodies</div>
-          
-          {/* Console Logs */}
-          {debugDetails.length > 0 && (
-            <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
-              <strong>Console Logs:</strong>
-              {debugDetails.map((log, i) => (
-                <div key={i} className="mt-1 break-all">{log}</div>
-              ))}
-            </div>
-          )}
-        </div>
 
         {/* Error State */}
         {error && (
@@ -259,7 +256,7 @@ const MeetingSummaries = () => {
         {/* Meeting Cards */}
         <div className="space-y-6">
           {filteredMeetings.map((meeting, index) => {
-            const meetingId = meeting.id || meeting.created_at + index;
+            const meetingId = meeting.id || meeting.date + index;
             const isExpanded = expandedMeetings.has(meetingId);
             
             return (
@@ -290,21 +287,21 @@ const MeetingSummaries = () => {
                              }
                            })()}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          <span>{meeting.government_body}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Badge variant="secondary">{meeting.government_body}</Badge>
-                      <Badge variant="outline">{meeting.document_type}</Badge>
-                      {meeting.ai_generated && (
-                        <Badge variant="default" className="bg-accent text-accent-foreground">
-                          AI Generated
-                        </Badge>
-                      )}
-                    </div>
+                         <div className="flex items-center gap-2">
+                           <Users className="h-4 w-4" />
+                           <span>{meeting.body}</span>
+                         </div>
+                       </div>
+                     </div>
+                     <div className="flex items-center gap-3">
+                       <Badge variant="secondary">{meeting.body}</Badge>
+                       <Badge variant="outline">{meeting.type}</Badge>
+                       {meeting.aiGenerated && (
+                         <Badge variant="default" className="bg-accent text-accent-foreground">
+                           AI Generated
+                         </Badge>
+                       )}
+                     </div>
                   </div>
                 </CardHeader>
                 
@@ -358,10 +355,10 @@ const MeetingSummaries = () => {
                       <ExternalLink className="mr-2 h-4 w-4" />
                       View Full Document
                     </Button>
-                    <Button variant="outline">
-                      <FileText className="mr-2 h-4 w-4" />
-                      View {meeting.document_type === 'agenda' ? 'Agenda' : 'Minutes'}
-                    </Button>
+                     <Button variant="outline">
+                       <FileText className="mr-2 h-4 w-4" />
+                       View {meeting.type === 'agenda' ? 'Agenda' : 'Minutes'}
+                     </Button>
                   </div>
                 </CardContent>
               </Card>
