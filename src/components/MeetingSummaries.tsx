@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,47 @@ import { useCivicSummaries } from "@/hooks/useCivicData";
 const MeetingSummaries = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedMeetings, setExpandedMeetings] = useState<Set<string>>(new Set());
+  const [debugInfo, setDebugInfo] = useState<string>("");
+  
+  // Direct API test to bypass service layer
+  useEffect(() => {
+    const testDirectFetch = async () => {
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const apiUrl = isMobile 
+        ? 'http://hueyphanclub.myqnapcloud.com:8080'
+        : 'https://hueyphanclub.myqnapcloud.com:8443';
+      
+      const testUrl = `${apiUrl}/api/summaries?_test=${Date.now()}`;
+      
+      setDebugInfo(`Mobile: ${isMobile}, URL: ${testUrl}`);
+      
+      try {
+        console.log('=== DIRECT FETCH TEST ===');
+        console.log('Mobile detected:', isMobile);
+        console.log('Test URL:', testUrl);
+        console.log('User Agent:', navigator.userAgent);
+        
+        const response = await fetch(testUrl, {
+          cache: 'no-cache',
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response OK:', response.ok);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Direct fetch SUCCESS:', data);
+        } else {
+          console.log('Direct fetch FAILED:', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.log('Direct fetch ERROR:', error);
+      }
+    };
+    
+    testDirectFetch();
+  }, []);
   
   // Fetch real data from Railway API
   const { summaries, statistics, loading: isLoading, error, refetch } = useCivicSummaries();
@@ -157,6 +198,14 @@ const MeetingSummaries = () => {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <span className="ml-3 text-lg text-muted-foreground">Loading meeting summaries...</span>
+          </div>
+        )}
+
+        
+        {/* Debug Info */}
+        {debugInfo && (
+          <div className="mb-4 p-4 bg-yellow-100 border border-yellow-300 rounded-lg">
+            <strong>Direct Fetch Test:</strong> {debugInfo}
           </div>
         )}
 
