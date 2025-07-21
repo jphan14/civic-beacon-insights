@@ -22,38 +22,73 @@ const MeetingSummaries = () => {
 
   // Function to format summary text with enumerated headings
   const formatSummaryText = (text: string) => {
-    // Split by common patterns that indicate new sections
-    const sections = text.split(/(?=\d+\.\s|\n\d+\.\s|(?:^|\n)(?:[A-Z][^.]*:)|\n(?=[A-Z][A-Z\s]+:))/);
+    // Split by line breaks first to avoid issues with years and numbers in content
+    const lines = text.split('\n');
+    const sections: string[] = [];
+    let currentSection = '';
+    
+    lines.forEach(line => {
+      const trimmedLine = line.trim();
+      
+      // Check if this line is a section header (number followed by period and text, or all caps with colon)
+      const isNumberedHeader = /^\d+\.\s+[A-Z]/.test(trimmedLine);
+      const isAllCapsHeader = /^[A-Z][A-Z\s]*:/.test(trimmedLine);
+      const isTitleCaseHeader = /^[A-Z][^.]*:/.test(trimmedLine) && trimmedLine.split(':')[0].length > 3;
+      
+      if ((isNumberedHeader || isAllCapsHeader || isTitleCaseHeader) && currentSection.trim()) {
+        // Save previous section
+        sections.push(currentSection.trim());
+        currentSection = trimmedLine;
+      } else if (isNumberedHeader || isAllCapsHeader || isTitleCaseHeader) {
+        // Start new section
+        currentSection = trimmedLine;
+      } else {
+        // Add to current section
+        if (currentSection) {
+          currentSection += '\n' + line;
+        } else {
+          currentSection = line;
+        }
+      }
+    });
+    
+    // Add the last section
+    if (currentSection.trim()) {
+      sections.push(currentSection.trim());
+    }
     
     return sections.map((section, index) => {
       if (!section.trim()) return null;
       
       const trimmedSection = section.trim();
+      const lines = trimmedSection.split('\n');
+      const firstLine = lines[0];
+      const restOfContent = lines.slice(1).join('\n').trim();
       
-      // Check if this section starts with a number (already enumerated)
-      const isNumbered = /^\d+\.\s/.test(trimmedSection);
-      
-      // Check if this section starts with a heading pattern (all caps or title case with colon)
-      const isHeading = /^[A-Z][A-Z\s]*:/.test(trimmedSection) || /^[A-Z][^.]*:/.test(trimmedSection);
+      // Check if first line is a header
+      const isNumbered = /^\d+\.\s/.test(firstLine);
+      const isHeading = /^[A-Z][A-Z\s]*:/.test(firstLine) || /^[A-Z][^.]*:/.test(firstLine);
       
       if (isNumbered || isHeading) {
-        const [heading, ...contentParts] = trimmedSection.split(/:\s?/);
-        const content = contentParts.join(': ');
+        const [heading, ...contentParts] = firstLine.split(/:\s?/);
+        const headerContent = contentParts.join(': ');
+        const fullContent = headerContent + (restOfContent ? '\n' + restOfContent : '');
         
         return (
           <div key={index} className="mb-4">
             <h5 className="font-semibold text-foreground mb-2 flex items-center">
-              {!isNumbered && <span className="text-primary mr-2">{index + 1}.</span>}
               {heading}{heading.endsWith(':') ? '' : ':'}
             </h5>
-            {content && (
-              <p className="text-muted-foreground leading-relaxed pl-6">{content}</p>
+            {fullContent && (
+              <div className="text-muted-foreground leading-relaxed pl-6 whitespace-pre-line">
+                {fullContent}
+              </div>
             )}
           </div>
         );
       }
       
-      // For regular paragraphs, add enumeration if it's a significant section
+      // For sections without clear headers, add enumeration if significant
       if (trimmedSection.length > 50) {
         return (
           <div key={index} className="mb-4">
@@ -61,15 +96,17 @@ const MeetingSummaries = () => {
               <span className="text-primary mr-2">{index + 1}.</span>
               Summary Section
             </h5>
-            <p className="text-muted-foreground leading-relaxed pl-6">{trimmedSection}</p>
+            <div className="text-muted-foreground leading-relaxed pl-6 whitespace-pre-line">
+              {trimmedSection}
+            </div>
           </div>
         );
       }
       
       return (
-        <p key={index} className="text-muted-foreground leading-relaxed mb-2">
+        <div key={index} className="text-muted-foreground leading-relaxed mb-2 whitespace-pre-line">
           {trimmedSection}
-        </p>
+        </div>
       );
     }).filter(Boolean);
   };
