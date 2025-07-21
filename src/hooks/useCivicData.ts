@@ -12,8 +12,8 @@ export const useCivicSummaries = () => {
       setLoading(true);
       setError(null);
       
-      // Force HTTP URL for all devices to test
-      const baseUrl = 'http://hueyphanclub.myqnapcloud.com:8080';
+      // Use HTTPS for all devices - mixed content policy prevents HTTP from HTTPS sites
+      const baseUrl = 'https://hueyphanclub.myqnapcloud.com:8443';
       
       const url = `${baseUrl}/api/summaries?_t=${Date.now()}`;
       
