@@ -78,7 +78,16 @@ class CivicApiService {
   private async fetchWithErrorHandling(endpoint: string): Promise<any> {
     try {
       const baseUrl = getApiBaseUrl();
-      const response = await fetch(`${baseUrl}${endpoint}`);
+      const fullUrl = `${baseUrl}${endpoint}`;
+      console.log('=== API FETCH DEBUG ===');
+      console.log('Endpoint:', endpoint);
+      console.log('Base URL:', baseUrl);
+      console.log('Full URL:', fullUrl);
+      console.log('User Agent:', navigator.userAgent);
+      console.log('Is Mobile:', isMobile());
+      console.log('=======================');
+      
+      const response = await fetch(fullUrl);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
