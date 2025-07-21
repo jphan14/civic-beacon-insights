@@ -40,12 +40,20 @@ export const useCivicSummaries = () => {
       console.log('Data keys:', Object.keys(data || {}));
       
       console.log('=== HOOK SUCCESS ===');
-      console.log('Data:', data);
-      console.log('Summaries:', data.summaries?.length);
+      console.log('Raw data received:', data);
+      console.log('Data type:', typeof data);
+      console.log('Data.summaries:', data.summaries);
+      console.log('Data.summaries length:', data.summaries?.length);
+      console.log('Data.statistics:', data.statistics);
+      console.log('About to set state...');
       console.log('===================');
       
       setSummaries(data.summaries || []);
       setStatistics(data.statistics || {} as CivicStatistics);
+      
+      console.log('=== STATE SET ===');
+      console.log('State summaries length after set:', (data.summaries || []).length);
+      console.log('==================');
     } catch (err) {
       console.log('=== HOOK ERROR ===');
       console.log('Error type:', typeof err);
