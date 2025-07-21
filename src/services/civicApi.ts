@@ -1,5 +1,5 @@
 // LCF Civic Summaries API Service
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://hueyphanclub.myqnapcloud.com:8080';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://hueyphanclub.myqnapcloud.com:8443';
 
 export interface CivicSummary {
   id: string;
