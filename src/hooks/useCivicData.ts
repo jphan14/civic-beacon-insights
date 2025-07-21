@@ -12,16 +12,12 @@ export const useCivicSummaries = () => {
       setLoading(true);
       setError(null);
       
-      // Direct mobile detection and URL selection
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const baseUrl = isMobile 
-        ? 'http://hueyphanclub.myqnapcloud.com:8080'
-        : 'https://hueyphanclub.myqnapcloud.com:8443';
+      // Force HTTP URL for all devices to test
+      const baseUrl = 'http://hueyphanclub.myqnapcloud.com:8080';
       
       const url = `${baseUrl}/api/summaries?_t=${Date.now()}`;
       
       console.log('=== HOOK DIRECT FETCH ===');
-      console.log('Mobile:', isMobile);
       console.log('URL:', url);
       console.log('========================');
       
