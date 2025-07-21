@@ -180,7 +180,9 @@ const MeetingSummaries = () => {
               <div className="text-sm text-muted-foreground mt-2">
                 <strong>Connected to QNAP API:</strong> 
                 <br />
-                <code>https://hueyphanclub.myqnapcloud.com:8443</code>
+                <code>{navigator.userAgent && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+                  ? 'http://hueyphanclub.myqnapcloud.com:8080' 
+                  : 'https://hueyphanclub.myqnapcloud.com:8443'}</code>
                 <br />
                 {statistics?.total_documents && (
                   <span>Found {statistics.total_documents} documents from {statistics.government_bodies} government bodies</span>

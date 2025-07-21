@@ -78,7 +78,11 @@ class CivicApiService {
   private async fetchWithErrorHandling(endpoint: string): Promise<any> {
     try {
       const baseUrl = getApiBaseUrl();
-      const fullUrl = `${baseUrl}${endpoint}`;
+      // Add cache-busting parameter to force fresh requests
+      const separator = endpoint.includes('?') ? '&' : '?';
+      const cacheBuster = `${separator}_t=${Date.now()}`;
+      const fullUrl = `${baseUrl}${endpoint}${cacheBuster}`;
+      
       console.log('=== API FETCH DEBUG ===');
       console.log('Endpoint:', endpoint);
       console.log('Base URL:', baseUrl);
@@ -87,7 +91,12 @@ class CivicApiService {
       console.log('Is Mobile:', isMobile());
       console.log('=======================');
       
-      const response = await fetch(fullUrl);
+      const response = await fetch(fullUrl, {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
