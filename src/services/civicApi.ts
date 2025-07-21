@@ -16,7 +16,7 @@ const getApiUrl = () => {
 };
 
 // Use in your API calls
-const API_BASE_URL = import.meta.env.VITE_API_URL || getApiUrl();
+const API_BASE_URL = getApiUrl();
 
 export interface CivicSummary {
   id: string;
