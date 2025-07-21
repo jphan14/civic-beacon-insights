@@ -6,8 +6,9 @@ const API_BASE_URL = 'https://hueyphanclub.myqnapcloud.com:8443';
  * @returns {Promise<object>} - The JSON response from the API.
  */
 export const fetchMeetingSummaries = async () => {
+  // IMPORTANT: The path must start with /api/ for the proxy and server to recognize it.
   const url = `${API_BASE_URL}/api/summaries`;
-  console.log(`📡 Fetching summaries from the unified URL: ${url}`);
+  console.log(`[FIXED] Attempting to fetch from the single, correct URL: ${url}`);
 
   try {
     const controller = new AbortController();
@@ -15,21 +16,25 @@ export const fetchMeetingSummaries = async () => {
 
     const response = await fetch(url, {
       signal: controller.signal,
-      headers: { 'Accept': 'application/json' }
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json' // Add this header
+      }
     });
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      console.error(`[ERROR] API request failed with status: ${response.status}`);
       throw new Error(`API request failed with status ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("✅ Summaries loaded successfully via Reverse Proxy.");
+    console.log("[SUCCESS] Summaries loaded successfully via Reverse Proxy.");
     return data;
 
   } catch (error) {
-    console.error("❌ Failed to fetch meeting summaries:", error);
+    console.error("[FATAL] Could not fetch meeting summaries:", error);
     throw error;
   }
 };
