@@ -12,8 +12,11 @@ export const useCivicSummaries = () => {
       setLoading(true);
       setError(null);
       
-      // Use HTTPS for all devices - mixed content policy prevents HTTP from HTTPS sites
-      const baseUrl = 'https://hueyphanclub.myqnapcloud.com:8443';
+      // Mobile detection and URL selection
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const baseUrl = isMobile 
+        ? 'http://hueyphanclub.myqnapcloud.com:8080'   // HTTP for mobile
+        : 'https://hueyphanclub.myqnapcloud.com:8443'; // HTTPS for desktop
       
       const url = `${baseUrl}/api/summaries?_t=${Date.now()}`;
       
