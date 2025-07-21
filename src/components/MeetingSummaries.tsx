@@ -35,6 +35,14 @@ const MeetingSummaries = () => {
   // Fetch real data from API
   const { summaries, statistics, loading: isLoading, error, refetch } = useCivicSummaries();
   
+  // Debug logging for mobile
+  console.log('=== COMPONENT RENDER ===');
+  console.log('Summaries received:', summaries);
+  console.log('Summaries length:', summaries?.length);
+  console.log('Loading state:', isLoading);
+  console.log('Error state:', error);
+  console.log('========================');
+  
   // Filter summaries based on search term
   const filteredMeetings = summaries.filter(meeting =>
     meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
