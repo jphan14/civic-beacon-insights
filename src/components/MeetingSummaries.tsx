@@ -233,12 +233,20 @@ const MeetingSummaries = () => {
                       <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
-                           <span>{new Date(meeting.date).toLocaleDateString('en-US', { 
-                             weekday: 'long', 
-                             year: 'numeric', 
-                             month: 'long', 
-                             day: 'numeric' 
-                           })}</span>
+                           <span>{(() => {
+                             try {
+                               const date = new Date(meeting.date);
+                               return isNaN(date.getTime()) ? meeting.date : date.toLocaleDateString('en-US', { 
+                                 weekday: 'long', 
+                                 year: 'numeric', 
+                                 month: 'long', 
+                                 day: 'numeric' 
+                               });
+                             } catch (error) {
+                               console.error('Date parsing error:', error, 'for date:', meeting.date);
+                               return meeting.date;
+                             }
+                           })()}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <Users className="h-4 w-4" />
