@@ -31,6 +31,11 @@ export const useCivicSummaries = () => {
       }
       
       const data = await response.json();
+      console.log('=== HOOK SUCCESS ===');
+      console.log('Data:', data);
+      console.log('Summaries:', data.summaries?.length);
+      console.log('===================');
+      
       setSummaries(data.summaries || []);
       setStatistics(data.statistics || {} as CivicStatistics);
     } catch (err) {
