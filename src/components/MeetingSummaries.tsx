@@ -261,37 +261,41 @@ const MeetingSummaries = () => {
                 <CardContent className="space-y-6">
                   {/* Summary Preview (first 200 characters) */}
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-foreground text-lg">Meeting Summary</h4>
+                    <div className="mb-3">
+                      <h4 className="font-semibold text-foreground text-lg mb-4">Meeting Summary</h4>
+                      
                       <Collapsible open={isExpanded} onOpenChange={() => toggleMeetingExpanded(meetingId)}>
-                        <CollapsibleTrigger asChild>
-                          <Button variant="ghost" size="sm" className="hover:bg-muted">
-                            {isExpanded ? (
-                              <>
-                                <ChevronUp className="h-4 w-4 mr-2" />
-                                Show Less
-                              </>
-                            ) : (
-                              <>
-                                <ChevronDown className="h-4 w-4 mr-2" />
-                                Read Full Summary
-                              </>
-                            )}
-                          </Button>
-                        </CollapsibleTrigger>
-                        
                         <div className="space-y-4">
                           {!isExpanded && (
-                            <p className="text-muted-foreground leading-relaxed">
-                              {meeting.summary.length > 200 
-                                ? `${meeting.summary.substring(0, 200)}...`
-                                : meeting.summary
-                              }
-                            </p>
+                            <>
+                              <p className="text-muted-foreground leading-relaxed">
+                                {meeting.summary.length > 200 
+                                  ? `${meeting.summary.substring(0, 200)}...`
+                                  : meeting.summary
+                                }
+                              </p>
+                              
+                              <div className="pt-4">
+                                <CollapsibleTrigger asChild>
+                                  <Button variant="default" size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg">
+                                    <ChevronDown className="h-4 w-4 mr-2" />
+                                    Read Full Summary
+                                  </Button>
+                                </CollapsibleTrigger>
+                              </div>
+                            </>
                           )}
                           
                           <CollapsibleContent className="space-y-4 animate-accordion-down data-[state=closed]:animate-accordion-up">
                             {formatSummaryText(meeting.summary)}
+                            <div className="pt-4 border-t border-border/30">
+                              <CollapsibleTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                                  <ChevronUp className="h-4 w-4 mr-2" />
+                                  Show Less
+                                </Button>
+                              </CollapsibleTrigger>
+                            </div>
                           </CollapsibleContent>
                         </div>
                       </Collapsible>
