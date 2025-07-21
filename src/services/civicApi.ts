@@ -79,7 +79,7 @@ export interface HealthResponse {
   version: string;
 }
 
-// Direct fetch functions instead of class
+// Direct fetch functions with timeout handling
 const fetchCivicData = async (endpoint: string): Promise<any> => {
   const baseUrl = getApiUrl();
   const separator = endpoint.includes('?') ? '&' : '?';
@@ -90,18 +90,36 @@ const fetchCivicData = async (endpoint: string): Promise<any> => {
   console.log('Full URL:', fullUrl);
   console.log('=====================');
   
-  const response = await fetch(fullUrl, {
-    cache: 'no-cache',
-    headers: {
-      'Cache-Control': 'no-cache'
+  try {
+    // Add 15-second timeout for mobile reliability
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.log('❌ Request timeout after 15 seconds');
+      controller.abort();
+    }, 15000);
+    
+    const response = await fetch(fullUrl, {
+      signal: controller.signal,
+      cache: 'no-cache',
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  });
-  
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+    
+    const data = await response.json();
+    console.log('✅ Data loaded successfully');
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Failed to fetch civic data:', error);
+    throw error;
   }
-  
-  return await response.json();
 };
 
 // Export direct functions
