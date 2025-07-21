@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar, Clock, Users, Search, ExternalLink, AlertCircle, Loader2, RefreshCcw, FileText } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Calendar, Clock, Users, Search, ExternalLink, AlertCircle, Loader2, RefreshCcw, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import { useCivicSummaries } from "@/hooks/useCivicData";
 
 const MeetingSummaries = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [expandedMeetings, setExpandedMeetings] = useState<Set<string>>(new Set());
   
   // Fetch real data from Railway API
   const { summaries, statistics, loading: isLoading, error, refetch } = useCivicSummaries();
@@ -19,6 +21,17 @@ const MeetingSummaries = () => {
     meeting.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
     meeting.government_body.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Toggle expanded state for a meeting
+  const toggleMeetingExpanded = (meetingId: string) => {
+    const newExpanded = new Set(expandedMeetings);
+    if (newExpanded.has(meetingId)) {
+      newExpanded.delete(meetingId);
+    } else {
+      newExpanded.add(meetingId);
+    }
+    setExpandedMeetings(newExpanded);
+  };
 
   // Function to format summary text with enumerated headings
   const formatSummaryText = (text: string) => {
@@ -203,67 +216,103 @@ const MeetingSummaries = () => {
 
         {/* Meeting Cards */}
         <div className="space-y-6">
-          {filteredMeetings.map((meeting, index) => (
-            <Card 
-              key={meeting.id || meeting.created_at + index} 
-              className="hover:shadow-card transition-all duration-300 border-border/50 animate-fade-in"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <CardHeader>
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                  <div className="space-y-2">
-                    <CardTitle className="text-2xl text-foreground">{meeting.title}</CardTitle>
-                    <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                         <span>{new Date(meeting.meeting_date).toLocaleDateString('en-US', { 
-                           weekday: 'long', 
-                           year: 'numeric', 
-                           month: 'long', 
-                           day: 'numeric' 
-                         })}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        <span>{meeting.government_body}</span>
+          {filteredMeetings.map((meeting, index) => {
+            const meetingId = meeting.id || meeting.created_at + index;
+            const isExpanded = expandedMeetings.has(meetingId);
+            
+            return (
+              <Card 
+                key={meetingId} 
+                className="hover:shadow-card transition-all duration-300 border-border/50 animate-fade-in"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <CardHeader>
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="space-y-2">
+                      <CardTitle className="text-2xl text-foreground">{meeting.title}</CardTitle>
+                      <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                           <span>{new Date(meeting.meeting_date).toLocaleDateString('en-US', { 
+                             weekday: 'long', 
+                             year: 'numeric', 
+                             month: 'long', 
+                             day: 'numeric' 
+                           })}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          <span>{meeting.government_body}</span>
+                        </div>
                       </div>
                     </div>
+                    <div className="flex items-center gap-3">
+                      <Badge variant="secondary">{meeting.government_body}</Badge>
+                      <Badge variant="outline">{meeting.document_type}</Badge>
+                      {meeting.ai_generated && (
+                        <Badge variant="default" className="bg-accent text-accent-foreground">
+                          AI Generated
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant="secondary">{meeting.government_body}</Badge>
-                    <Badge variant="outline">{meeting.document_type}</Badge>
-                    {meeting.ai_generated && (
-                      <Badge variant="default" className="bg-accent text-accent-foreground">
-                        AI Generated
-                      </Badge>
-                    )}
+                </CardHeader>
+                
+                <CardContent className="space-y-6">
+                  {/* Summary Preview (first 200 characters) */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-foreground text-lg">Meeting Summary</h4>
+                      <Collapsible open={isExpanded} onOpenChange={() => toggleMeetingExpanded(meetingId)}>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" size="sm" className="hover:bg-muted">
+                            {isExpanded ? (
+                              <>
+                                <ChevronUp className="h-4 w-4 mr-2" />
+                                Show Less
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown className="h-4 w-4 mr-2" />
+                                Read Full Summary
+                              </>
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                        
+                        <div className="space-y-4">
+                          {!isExpanded && (
+                            <p className="text-muted-foreground leading-relaxed">
+                              {meeting.summary.length > 200 
+                                ? `${meeting.summary.substring(0, 200)}...`
+                                : meeting.summary
+                              }
+                            </p>
+                          )}
+                          
+                          <CollapsibleContent className="space-y-4 animate-accordion-down data-[state=closed]:animate-accordion-up">
+                            {formatSummaryText(meeting.summary)}
+                          </CollapsibleContent>
+                        </div>
+                      </Collapsible>
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="space-y-6">
-                {/* Enhanced Summary with Enumerated Headings */}
-                <div>
-                  <h4 className="font-semibold text-foreground mb-4 text-lg">Meeting Summary</h4>
-                  <div className="space-y-4">
-                    {formatSummaryText(meeting.summary)}
-                  </div>
-                </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-3 pt-4 border-t border-border/50">
-                  <Button variant="outline">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    View Full Document
-                  </Button>
-                  <Button variant="outline">
-                    <FileText className="mr-2 h-4 w-4" />
-                    View {meeting.document_type === 'agenda' ? 'Agenda' : 'Minutes'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-4 border-t border-border/50">
+                    <Button variant="outline">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      View Full Document
+                    </Button>
+                    <Button variant="outline">
+                      <FileText className="mr-2 h-4 w-4" />
+                      View {meeting.document_type === 'agenda' ? 'Agenda' : 'Minutes'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {!isLoading && !error && filteredMeetings.length === 0 && summaries.length > 0 && (
