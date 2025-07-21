@@ -2,7 +2,19 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, FileText, Users } from "lucide-react";
 import heroImage from "@/assets/civic-hero.jpg";
 
+// Debug info for mobile detection
+const getDebugInfo = () => {
+  const userAgent = navigator.userAgent;
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  const apiUrl = isMobile 
+    ? 'http://hueyphanclub.myqnapcloud.com:8080'
+    : 'https://hueyphanclub.myqnapcloud.com:8443';
+  
+  return { userAgent, isMobile, apiUrl };
+};
+
 const Hero = () => {
+  const debugInfo = getDebugInfo();
   return (
     <section className="relative py-20 lg:py-32 overflow-hidden">
       {/* Background with gradient overlay */}
@@ -46,6 +58,16 @@ const Hero = () => {
                   <div className="font-semibold text-foreground">Community</div>
                   <div className="text-sm text-muted-foreground">Focused</div>
                 </div>
+              </div>
+            </div>
+
+            {/* Debug Info */}
+            <div className="bg-muted/50 p-4 rounded-lg border text-sm space-y-2">
+              <div className="font-semibold text-foreground">Debug Info:</div>
+              <div className="text-muted-foreground">
+                <div><strong>Mobile Detected:</strong> {debugInfo.isMobile ? 'Yes' : 'No'}</div>
+                <div><strong>API URL:</strong> {debugInfo.apiUrl}</div>
+                <div><strong>User Agent:</strong> {debugInfo.userAgent.slice(0, 50)}...</div>
               </div>
             </div>
 
