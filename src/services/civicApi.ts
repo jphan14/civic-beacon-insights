@@ -2,12 +2,18 @@
 
 // Mobile detection and API URL selection
 const isMobile = () => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const userAgent = navigator.userAgent;
+  const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  console.log('User Agent:', userAgent);
+  console.log('Is Mobile:', mobile);
+  return mobile;
 };
 
 const API_BASE_URL = isMobile() 
   ? 'http://hueyphanclub.myqnapcloud.com:8080'   // HTTP for mobile
   : 'https://hueyphanclub.myqnapcloud.com:8443'; // HTTPS for desktop
+
+console.log('Selected API_BASE_URL:', API_BASE_URL);
 
 export interface CivicSummary {
   id: string;
