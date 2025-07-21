@@ -1,21 +1,26 @@
 // LCF Civic Summaries API Service
 
-// Mobile detection and API URL selection
-const isMobile = () => {
+// ALWAYS get fresh mobile detection on each call
+const isMobileDevice = () => {
   const userAgent = navigator.userAgent;
   const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  console.log('=== MOBILE DETECTION ===');
   console.log('User Agent:', userAgent);
   console.log('Is Mobile:', mobile);
+  console.log('========================');
   return mobile;
 };
 
-const getApiBaseUrl = () => {
-  const apiUrl = isMobile() 
+const getApiUrl = () => {
+  const isMobile = isMobileDevice();
+  const url = isMobile 
     ? 'http://hueyphanclub.myqnapcloud.com:8080'   // HTTP for mobile
     : 'https://hueyphanclub.myqnapcloud.com:8443'; // HTTPS for desktop
   
-  console.log('Selected API_BASE_URL:', apiUrl);
-  return apiUrl;
+  console.log('=== API URL SELECTION ===');
+  console.log('Selected URL:', url);
+  console.log('==========================');
+  return url;
 };
 
 export interface CivicSummary {
@@ -74,79 +79,72 @@ export interface HealthResponse {
   version: string;
 }
 
+// Direct fetch functions instead of class
+const fetchCivicData = async (endpoint: string): Promise<any> => {
+  const baseUrl = getApiUrl();
+  const separator = endpoint.includes('?') ? '&' : '?';
+  const cacheBuster = `${separator}_t=${Date.now()}`;
+  const fullUrl = `${baseUrl}${endpoint}${cacheBuster}`;
+  
+  console.log('=== FETCH REQUEST ===');
+  console.log('Full URL:', fullUrl);
+  console.log('=====================');
+  
+  const response = await fetch(fullUrl, {
+    cache: 'no-cache',
+    headers: {
+      'Cache-Control': 'no-cache'
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return await response.json();
+};
+
+// Export direct functions
+export const getCurrentSummaries = (): Promise<SummariesResponse> => 
+  fetchCivicData('/api/summaries');
+
+export const getArchive = (): Promise<ArchiveResponse> => 
+  fetchCivicData('/api/archive');
+
+export const searchSummaries = (query: string, governmentBody = ''): Promise<SearchResponse> => {
+  const params = new URLSearchParams({ q: query });
+  if (governmentBody) {
+    params.append('body', governmentBody);
+  }
+  return fetchCivicData(`/api/search?${params}`);
+};
+
+export const getGovernmentBodies = (): Promise<{ government_bodies: string[]; current_count: number; archive_count: number; total_count: number }> => 
+  fetchCivicData('/api/government-bodies');
+
+export const checkHealth = (): Promise<HealthResponse> => 
+  fetchCivicData('/api/health');
+
+// Legacy class for backward compatibility
 class CivicApiService {
-  private async fetchWithErrorHandling(endpoint: string): Promise<any> {
-    try {
-      const baseUrl = getApiBaseUrl();
-      // Add cache-busting parameter to force fresh requests
-      const separator = endpoint.includes('?') ? '&' : '?';
-      const cacheBuster = `${separator}_t=${Date.now()}`;
-      const fullUrl = `${baseUrl}${endpoint}${cacheBuster}`;
-      
-      console.log('=== API FETCH DEBUG ===');
-      console.log('Endpoint:', endpoint);
-      console.log('Base URL:', baseUrl);
-      console.log('Full URL:', fullUrl);
-      console.log('User Agent:', navigator.userAgent);
-      console.log('Is Mobile:', isMobile());
-      console.log('=======================');
-      
-      const response = await fetch(fullUrl, {
-        cache: 'no-cache',
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error(`API Error for ${endpoint}:`, error);
-      throw error;
-    }
-  }
-
-  private async fetchWithRetry(endpoint: string, retries = 3): Promise<any> {
-    for (let i = 0; i < retries; i++) {
-      try {
-        return await this.fetchWithErrorHandling(endpoint);
-      } catch (error) {
-        if (i === retries - 1) throw error;
-        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-      }
-    }
-  }
-
-  // Health check
-  async checkHealth(): Promise<HealthResponse> {
-    return this.fetchWithErrorHandling('/api/health');
-  }
-
-  // Get current meeting summaries
   async getCurrentSummaries(): Promise<SummariesResponse> {
-    return this.fetchWithRetry('/api/summaries');
+    return getCurrentSummaries();
   }
 
-  // Get historical archive
   async getArchive(): Promise<ArchiveResponse> {
-    return this.fetchWithRetry('/api/archive');
+    return getArchive();
   }
 
-  // Search summaries
   async searchSummaries(query: string, governmentBody = ''): Promise<SearchResponse> {
-    const params = new URLSearchParams({ q: query });
-    if (governmentBody) {
-      params.append('body', governmentBody);
-    }
-    return this.fetchWithRetry(`/api/search?${params}`);
+    return searchSummaries(query, governmentBody);
   }
 
-  // Get government bodies
   async getGovernmentBodies(): Promise<{ government_bodies: string[]; current_count: number; archive_count: number; total_count: number }> {
-    return this.fetchWithRetry('/api/government-bodies');
+    return getGovernmentBodies();
+  }
+
+  async checkHealth(): Promise<HealthResponse> {
+    return checkHealth();
   }
 }
 
