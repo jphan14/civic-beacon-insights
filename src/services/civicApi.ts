@@ -5,11 +5,16 @@ export interface CivicSummary {
   id: string;
   title: string;
   government_body: string;
-  meeting_date: string;
+  date: string; // API returns 'date', not 'meeting_date'
   document_type: string;
   summary: string;
   ai_generated: boolean;
-  created_at: string;
+  created_at?: string;
+  processed_at?: string;
+  content_length?: number;
+  summary_length?: number;
+  key_topics?: string[];
+  source_url?: string;
   pdf_url?: string;
 }
 

@@ -233,7 +233,7 @@ const MeetingSummaries = () => {
                       <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
-                           <span>{new Date(meeting.meeting_date).toLocaleDateString('en-US', { 
+                           <span>{new Date(meeting.date).toLocaleDateString('en-US', { 
                              weekday: 'long', 
                              year: 'numeric', 
                              month: 'long', 
