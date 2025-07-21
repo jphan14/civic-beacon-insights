@@ -277,7 +277,7 @@ const MeetingSummaries = () => {
                               
                               <div className="pt-4">
                                 <CollapsibleTrigger asChild>
-                                  <Button variant="default" size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg">
+                                  <Button variant="outline" size="default" className="border-primary/20 text-primary hover:bg-primary/5">
                                     <ChevronDown className="h-4 w-4 mr-2" />
                                     Read Full Summary
                                   </Button>
