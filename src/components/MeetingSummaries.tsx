@@ -160,6 +160,16 @@ const MeetingSummaries = () => {
           </div>
         )}
 
+        
+        {/* Debug Status Display */}
+        <div className="mb-4 p-4 bg-blue-100 border border-blue-300 rounded-lg text-sm">
+          <div><strong>Debug Status:</strong></div>
+          <div>Loading: {isLoading ? 'Yes' : 'No'}</div>
+          <div>Error: {error || 'None'}</div>
+          <div>Summaries Count: {summaries?.length || 0}</div>
+          <div>Statistics: {statistics?.total_documents || 0} docs from {statistics?.government_bodies || 0} bodies</div>
+        </div>
+
         {/* Error State */}
         {error && (
           <Alert className="mb-8 border-destructive/50 text-destructive">
