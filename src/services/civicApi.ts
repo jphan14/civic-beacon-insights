@@ -9,11 +9,14 @@ const isMobile = () => {
   return mobile;
 };
 
-const API_BASE_URL = isMobile() 
-  ? 'http://hueyphanclub.myqnapcloud.com:8080'   // HTTP for mobile
-  : 'https://hueyphanclub.myqnapcloud.com:8443'; // HTTPS for desktop
-
-console.log('Selected API_BASE_URL:', API_BASE_URL);
+const getApiBaseUrl = () => {
+  const apiUrl = isMobile() 
+    ? 'http://hueyphanclub.myqnapcloud.com:8080'   // HTTP for mobile
+    : 'https://hueyphanclub.myqnapcloud.com:8443'; // HTTPS for desktop
+  
+  console.log('Selected API_BASE_URL:', apiUrl);
+  return apiUrl;
+};
 
 export interface CivicSummary {
   id: string;
@@ -72,15 +75,10 @@ export interface HealthResponse {
 }
 
 class CivicApiService {
-  private baseUrl: string;
-
-  constructor() {
-    this.baseUrl = API_BASE_URL;
-  }
-
   private async fetchWithErrorHandling(endpoint: string): Promise<any> {
     try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`);
+      const baseUrl = getApiBaseUrl();
+      const response = await fetch(`${baseUrl}${endpoint}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
