@@ -11,6 +11,26 @@ import { useCivicSummaries } from "@/hooks/useCivicData";
 const MeetingSummaries = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedMeetings, setExpandedMeetings] = useState<Set<string>>(new Set());
+  const [debugDetails, setDebugDetails] = useState<string[]>([]);
+  
+  // Capture console logs for mobile debugging
+  useEffect(() => {
+    const originalLog = console.log;
+    const logs: string[] = [];
+    
+    console.log = (...args) => {
+      const message = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' ');
+      logs.push(message);
+      setDebugDetails([...logs].slice(-10)); // Keep last 10 logs
+      originalLog(...args);
+    };
+    
+    return () => {
+      console.log = originalLog;
+    };
+  }, []);
   
   // Fetch real data from API
   const { summaries, statistics, loading: isLoading, error, refetch } = useCivicSummaries();
@@ -168,6 +188,16 @@ const MeetingSummaries = () => {
           <div>Error: {error || 'None'}</div>
           <div>Summaries Count: {summaries?.length || 0}</div>
           <div>Statistics: {statistics?.total_documents || 0} docs from {statistics?.government_bodies || 0} bodies</div>
+          
+          {/* Console Logs */}
+          {debugDetails.length > 0 && (
+            <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
+              <strong>Console Logs:</strong>
+              {debugDetails.map((log, i) => (
+                <div key={i} className="mt-1 break-all">{log}</div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Error State */}

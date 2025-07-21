@@ -26,11 +26,19 @@ export const useCivicSummaries = () => {
         headers: { 'Cache-Control': 'no-cache' }
       });
       
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
+      console.log('About to parse JSON...');
       const data = await response.json();
+      console.log('JSON parsed successfully');
+      console.log('Data type:', typeof data);
+      console.log('Data keys:', Object.keys(data || {}));
+      
       console.log('=== HOOK SUCCESS ===');
       console.log('Data:', data);
       console.log('Summaries:', data.summaries?.length);
@@ -39,12 +47,12 @@ export const useCivicSummaries = () => {
       setSummaries(data.summaries || []);
       setStatistics(data.statistics || {} as CivicStatistics);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch summaries';
       console.log('=== HOOK ERROR ===');
+      console.log('Error type:', typeof err);
       console.log('Error:', err);
-      console.log('Error message:', errorMessage);
+      console.log('Error message:', err instanceof Error ? err.message : String(err));
       console.log('=================');
-      setError(`Load failed: ${errorMessage}`);
+      setError(`${err instanceof Error ? err.message : String(err)}`);
       setSummaries([]);
       console.error('Hook fetch error:', err);
     } finally {
