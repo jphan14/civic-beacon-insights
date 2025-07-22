@@ -1,33 +1,14 @@
-// LCF Civic Summaries API Service
+// Civic Beacon Insights API Service
+// Based on Lovable Integration Guide v2.0
 
-// ALWAYS get fresh mobile detection on each call
-const isMobileDevice = () => {
-  const userAgent = navigator.userAgent;
-  const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-  console.log('=== MOBILE DETECTION ===');
-  console.log('User Agent:', userAgent);
-  console.log('Is Mobile:', mobile);
-  console.log('========================');
-  return mobile;
-};
-
-const getApiUrl = () => {
-  const isMobile = isMobileDevice();
-  const url = isMobile 
-    ? 'http://hueyphanclub.myqnapcloud.com:8080'   // HTTP for mobile
-    : 'https://hueyphanclub.myqnapcloud.com:8443'; // HTTPS for desktop
-  
-  console.log('=== API URL SELECTION ===');
-  console.log('Selected URL:', url);
-  console.log('==========================');
-  return url;
-};
+// Use a single, secure URL for all devices. The QNAP Reverse Proxy handles the rest.
+const API_BASE_URL = 'https://hueyphanclub.myqnapcloud.com:8443';
 
 export interface CivicSummary {
   id: string;
   title: string;
   government_body: string;
-  date: string; // API returns 'date', not 'meeting_date'
+  date: string;
   document_type: string;
   summary: string;
   ai_generated: boolean;
@@ -79,91 +60,162 @@ export interface HealthResponse {
   version: string;
 }
 
-// Direct fetch functions with timeout handling
-const fetchCivicData = async (endpoint: string): Promise<any> => {
-  const baseUrl = getApiUrl();
-  const separator = endpoint.includes('?') ? '&' : '?';
-  const cacheBuster = `${separator}_t=${Date.now()}`;
-  const fullUrl = `${baseUrl}${endpoint}${cacheBuster}`;
-  
-  console.log('=== FETCH REQUEST ===');
-  console.log('Full URL:', fullUrl);
-  console.log('=====================');
-  
-  try {
-    // Add 15-second timeout for mobile reliability
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      console.log('❌ Request timeout after 15 seconds');
-      controller.abort();
-    }, 15000);
+/**
+ * Civic Beacon API Class
+ * Implements the integration patterns from the Lovable Integration Guide
+ */
+class CivicBeaconAPI {
+  private baseUrl: string;
+  private defaultTimeout: number;
+  private maxRetries: number;
+
+  constructor(baseUrl: string = API_BASE_URL) {
+    this.baseUrl = baseUrl;
+    this.defaultTimeout = 15000; // 15 seconds
+    this.maxRetries = 3;
+  }
+
+  /**
+   * Core fetch method with retry logic and comprehensive error handling
+   */
+  private async fetchWithRetry(endpoint: string, options: RequestInit = {}, retryCount = 0): Promise<any> {
+    const url = `${this.baseUrl}${endpoint}`;
     
-    const response = await fetch(fullUrl, {
-      signal: controller.signal,
-      cache: 'no-cache',
-      headers: {
-        'Cache-Control': 'no-cache'
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.defaultTimeout);
+
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        ...options,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
       }
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+
+      return await response.json();
+
+    } catch (error) {
+      // Implement retry logic for transient failures
+      if (retryCount < this.maxRetries && this.isRetryableError(error)) {
+        const delay = Math.min(1000 * Math.pow(2, retryCount), 5000); // Exponential backoff, max 5s
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.fetchWithRetry(endpoint, options, retryCount + 1);
+      }
+
+      // Enhance error messages for better debugging
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new Error(`Request timeout after ${this.defaultTimeout}ms. Please check your connection and try again.`);
+        }
+        if (error.message.includes('fetch')) {
+          throw new Error('Network error: Unable to connect to the civic data server. Please check your internet connection.');
+        }
+      }
+
+      throw error;
     }
-    
-    const data = await response.json();
-    console.log('✅ Data loaded successfully');
-    return data;
-    
-  } catch (error) {
-    console.error('❌ Failed to fetch civic data:', error);
-    throw error;
-  }
-};
-
-// Export direct functions
-export const getCurrentSummaries = (): Promise<SummariesResponse> => 
-  fetchCivicData('/api/summaries');
-
-export const getArchive = (): Promise<ArchiveResponse> => 
-  fetchCivicData('/api/archive');
-
-export const searchSummaries = (query: string, governmentBody = ''): Promise<SearchResponse> => {
-  const params = new URLSearchParams({ q: query });
-  if (governmentBody) {
-    params.append('body', governmentBody);
-  }
-  return fetchCivicData(`/api/search?${params}`);
-};
-
-export const getGovernmentBodies = (): Promise<{ government_bodies: string[]; current_count: number; archive_count: number; total_count: number }> => 
-  fetchCivicData('/api/government-bodies');
-
-export const checkHealth = (): Promise<HealthResponse> => 
-  fetchCivicData('/api/health');
-
-// Legacy class for backward compatibility
-class CivicApiService {
-  async getCurrentSummaries(): Promise<SummariesResponse> {
-    return getCurrentSummaries();
   }
 
-  async getArchive(): Promise<ArchiveResponse> {
-    return getArchive();
+  /**
+   * Determines if an error is worth retrying
+   */
+  private isRetryableError(error: any): boolean {
+    if (error instanceof Error) {
+      // Retry on network errors but not on timeout
+      return error.message.includes('fetch') && !error.name.includes('Abort');
+    }
+    return false;
   }
 
-  async searchSummaries(query: string, governmentBody = ''): Promise<SearchResponse> {
-    return searchSummaries(query, governmentBody);
+  /**
+   * Fetches meeting summaries with optional filtering
+   */
+  async fetchSummaries(filters: Record<string, string> = {}): Promise<SummariesResponse> {
+    const params = new URLSearchParams(filters);
+    const endpoint = `/api/summaries${params.toString() ? `?${params}` : ''}`;
+    return this.fetchWithRetry(endpoint);
   }
 
+  /**
+   * Searches summaries with query and optional filters
+   */
+  async searchSummaries(query: string, filters: Record<string, string> = {}): Promise<SearchResponse> {
+    const params = new URLSearchParams({ q: query, ...filters });
+    return this.fetchWithRetry(`/api/search?${params}`);
+  }
+
+  /**
+   * Gets list of government bodies
+   */
   async getGovernmentBodies(): Promise<{ government_bodies: string[]; current_count: number; archive_count: number; total_count: number }> {
-    return getGovernmentBodies();
+    return this.fetchWithRetry('/api/government-bodies');
   }
 
+  /**
+   * Gets archived summaries
+   */
+  async getArchive(): Promise<ArchiveResponse> {
+    return this.fetchWithRetry('/api/archive');
+  }
+
+  /**
+   * Gets system health status
+   */
   async checkHealth(): Promise<HealthResponse> {
-    return checkHealth();
+    return this.fetchWithRetry('/api/health');
+  }
+
+  /**
+   * Gets metadata about the dataset
+   */
+  async getMetadata(): Promise<any> {
+    return this.fetchWithRetry('/api/metadata');
+  }
+
+  /**
+   * Gets detailed statistics
+   */
+  async getStatistics(): Promise<any> {
+    return this.fetchWithRetry('/api/stats');
+  }
+
+  /**
+   * Triggers data refresh
+   */
+  async refreshData(): Promise<any> {
+    return this.fetchWithRetry('/api/refresh', { method: 'POST' });
   }
 }
 
-export const civicApi = new CivicApiService();
+// Create singleton instance
+export const civicApi = new CivicBeaconAPI();
+
+// Export individual functions for backward compatibility
+export const getCurrentSummaries = (filters?: Record<string, string>): Promise<SummariesResponse> => 
+  civicApi.fetchSummaries(filters);
+
+export const getArchive = (): Promise<ArchiveResponse> => 
+  civicApi.getArchive();
+
+export const searchSummaries = (query: string, governmentBody = ''): Promise<SearchResponse> => {
+  const filters = governmentBody ? { government_body: governmentBody } : {};
+  return civicApi.searchSummaries(query, filters);
+};
+
+export const getGovernmentBodies = (): Promise<{ government_bodies: string[]; current_count: number; archive_count: number; total_count: number }> => 
+  civicApi.getGovernmentBodies();
+
+export const checkHealth = (): Promise<HealthResponse> => 
+  civicApi.checkHealth();
+
+// Export the API class for advanced usage
+export { CivicBeaconAPI };

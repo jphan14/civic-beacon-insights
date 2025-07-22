@@ -6,13 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Calendar, Clock, Users, Search, ExternalLink, AlertCircle, Loader2, RefreshCcw, FileText, ChevronDown, ChevronUp } from "lucide-react";
-import { fetchMeetingSummaries } from "@/services/api";
-import type { Meeting } from "@/types/api";
+import { civicApi } from "@/services/civicApi";
+import type { CivicSummary } from "@/services/civicApi";
 
 const MeetingSummaries = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedMeetings, setExpandedMeetings] = useState<Set<string>>(new Set());
-  const [summaries, setSummaries] = useState<Meeting[]>([]);
+  const [summaries, setSummaries] = useState<CivicSummary[]>([]);
   const [statistics, setStatistics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +24,7 @@ const MeetingSummaries = () => {
         console.log("Attempting to load meeting summaries...");
         setIsLoading(true);
         setError(null);
-        const data = await fetchMeetingSummaries();
+        const data = await civicApi.fetchSummaries();
         setSummaries(data.summaries || []);
         setStatistics(data.statistics || {});
       } catch (err) {
@@ -41,7 +41,7 @@ const MeetingSummaries = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await fetchMeetingSummaries();
+      const data = await civicApi.fetchSummaries();
       setSummaries(data.summaries || []);
       setStatistics(data.statistics || {});
     } catch (err) {
@@ -55,7 +55,7 @@ const MeetingSummaries = () => {
   const filteredMeetings = summaries.filter(meeting =>
     meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     meeting.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    meeting.body.toLowerCase().includes(searchTerm.toLowerCase())
+    meeting.government_body.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Toggle expanded state for a meeting
@@ -289,14 +289,14 @@ const MeetingSummaries = () => {
                         </div>
                          <div className="flex items-center gap-2">
                            <Users className="h-4 w-4" />
-                           <span>{meeting.body}</span>
+                           <span>{meeting.government_body}</span>
                          </div>
                        </div>
                      </div>
                      <div className="flex items-center gap-3">
-                       <Badge variant="secondary">{meeting.body}</Badge>
-                       <Badge variant="outline">{meeting.type}</Badge>
-                       {meeting.aiGenerated && (
+                        <Badge variant="secondary">{meeting.government_body}</Badge>
+                        <Badge variant="outline">{meeting.document_type}</Badge>
+                        {meeting.ai_generated && (
                          <Badge variant="default" className="bg-accent text-accent-foreground">
                            AI Generated
                          </Badge>
@@ -357,7 +357,7 @@ const MeetingSummaries = () => {
                     </Button>
                      <Button variant="outline">
                        <FileText className="mr-2 h-4 w-4" />
-                       View {meeting.type === 'agenda' ? 'Agenda' : 'Minutes'}
+                       View {meeting.document_type === 'agenda' ? 'Agenda' : 'Minutes'}
                      </Button>
                   </div>
                 </CardContent>
