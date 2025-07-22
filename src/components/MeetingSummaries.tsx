@@ -17,17 +17,63 @@ const MeetingSummaries = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load summaries using the new mobile-aware API service
   useEffect(() => {
     const loadSummaries = async () => {
       try {
         console.log("Attempting to load meeting summaries...");
         setIsLoading(true);
         setError(null);
-        const data = await civicApi.fetchSummaries();
-        setSummaries(data.summaries || []);
-        setStatistics(data.statistics || {});
+        
+        // Try to fetch from API first
+        try {
+          const data = await civicApi.fetchSummaries();
+          setSummaries(data.summaries || []);
+          setStatistics(data.statistics || {});
+          console.log("✅ Successfully loaded data from API");
+          return;
+        } catch (apiError) {
+          console.warn("❌ API failed, showing demo data:", apiError);
+          
+          // Fallback to demo data for development/testing
+          const demoData = {
+            summaries: [
+              {
+                id: "demo-1",
+                title: "City Council Regular Meeting - Budget Discussion",
+                government_body: "City Council",
+                date: "2024-01-15",
+                document_type: "minutes",
+                summary: "Council discussed the proposed 2024 budget allocations, focusing on infrastructure improvements and public safety funding. Key decisions include approval of road maintenance budget increase and new community center proposal.",
+                ai_generated: true,
+                key_topics: ["Budget", "Infrastructure", "Public Safety"],
+                source_url: "#"
+              },
+              {
+                id: "demo-2", 
+                title: "Planning Commission Meeting - Zoning Updates",
+                government_body: "Planning Commission",
+                date: "2024-01-12",
+                document_type: "agenda",
+                summary: "Review of proposed zoning changes in downtown district. Discussion of new mixed-use development guidelines and parking requirements for commercial properties.",
+                ai_generated: true,
+                key_topics: ["Zoning", "Development", "Downtown"],
+                source_url: "#"
+              }
+            ],
+            statistics: {
+              total_documents: 2,
+              government_bodies: 2,
+              ai_summaries: 2,
+              recent_updates: 2
+            }
+          };
+          
+          setSummaries(demoData.summaries);
+          setStatistics(demoData.statistics);
+          setError("⚠️ Using demo data - API connection failed. This may be due to CORS, server connectivity, or SSL certificate issues.");
+        }
       } catch (err) {
+        console.error("Critical error:", err);
         setError('Failed to load meeting summaries. Please check your connection and try again.');
       } finally {
         setIsLoading(false);
