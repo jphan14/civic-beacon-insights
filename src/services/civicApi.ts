@@ -2,7 +2,7 @@
 // Based on Lovable Integration Guide v2.0
 
 // Use Cloudflare Tunnel URL for secure access to local Civic Beacon system
-const API_BASE_URL = 'https://cloud-instructors-ratios-join.trycloudflare.com';
+const API_BASE_URL = 'https://strange-working-raymond-dan.trycloudflare.com';
 
 export interface CivicSummary {
   id: string;
