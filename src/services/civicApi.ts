@@ -1,8 +1,8 @@
 // Civic Beacon Insights API Service
 // Based on Lovable Integration Guide v2.0
 
-// Use a single, secure URL for all devices. The QNAP Reverse Proxy handles the rest.
-const API_BASE_URL = 'https://hueyphanclub.myqnapcloud.com:8443';
+// Use Cloudflare Tunnel URL for secure access to local Civic Beacon system
+const API_BASE_URL = 'https://brutal-hdtv-lets-giants.trycloudflare.com';
 
 export interface CivicSummary {
   id: string;
