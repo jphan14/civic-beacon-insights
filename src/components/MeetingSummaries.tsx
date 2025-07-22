@@ -353,14 +353,30 @@ const MeetingSummaries = () => {
 
                   {/* Action Buttons */}
                   <div className="flex gap-3 pt-4 border-t border-border/50">
-                    <Button variant="outline">
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      View Full Document
-                    </Button>
-                     <Button variant="outline">
-                       <FileText className="mr-2 h-4 w-4" />
-                       View {meeting.document_type === 'agenda' ? 'Agenda' : 'Minutes'}
-                     </Button>
+                    {meeting.source_url && (
+                      <Button variant="outline" asChild>
+                        <a href={meeting.source_url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          View Full Document
+                        </a>
+                      </Button>
+                    )}
+                    {meeting.agenda_url && (
+                      <Button variant="outline" asChild>
+                        <a href={meeting.agenda_url} target="_blank" rel="noopener noreferrer">
+                          <FileText className="mr-2 h-4 w-4" />
+                          View Agenda
+                        </a>
+                      </Button>
+                    )}
+                    {meeting.pdf_url && (
+                      <Button variant="outline" asChild>
+                        <a href={meeting.pdf_url} target="_blank" rel="noopener noreferrer">
+                          <FileText className="mr-2 h-4 w-4" />
+                          View PDF
+                        </a>
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>

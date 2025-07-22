@@ -19,6 +19,7 @@ export interface CivicSummary {
   key_topics?: string[];
   source_url?: string;
   pdf_url?: string;
+  agenda_url?: string;
 }
 
 export interface CivicStatistics {
