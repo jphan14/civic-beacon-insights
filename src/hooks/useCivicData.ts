@@ -1,37 +1,53 @@
-import { useState, useEffect } from 'react';
-import { civicApi, type CivicSummary, type CivicStatistics, type ArchiveResponse } from '../services/civicApi';
+import { useState, useEffect, useCallback } from 'react';
+import { civicApi, type CivicSummary, type CivicStatistics, type ArchiveResponse, type PaginationInfo, type SummariesResponse, type SearchResponse } from '../services/civicApi';
 
-export const useCivicSummaries = () => {
+// Enhanced hook for paginated summaries with filtering
+export const useCivicSummaries = (options: {
+  page?: number;
+  limit?: number;
+  commission?: string[];
+  year?: number[];
+  ai_enhanced?: boolean;
+  template_enhanced?: boolean;
+} = {}) => {
   const [summaries, setSummaries] = useState<CivicSummary[]>([]);
   const [statistics, setStatistics] = useState<CivicStatistics>({} as CivicStatistics);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSummariesDirect = async () => {
+  const fetchSummariesDirect = useCallback(async (fetchOptions = options) => {
     try {
       setLoading(true);
       setError(null);
       
-      const data = await civicApi.fetchSummaries();
+      const data = await civicApi.fetchSummaries(fetchOptions);
       setSummaries(data.summaries || []);
       setStatistics(data.statistics || {} as CivicStatistics);
+      setPagination(data.pagination || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setSummaries([]);
+      setPagination(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [options]);
 
-  const refetch = async () => {
+  const refetch = useCallback(async () => {
     await fetchSummariesDirect();
-  };
+  }, [fetchSummariesDirect]);
 
   useEffect(() => {
     fetchSummariesDirect();
-  }, []);
+  }, [fetchSummariesDirect]);
 
-  return { summaries, statistics, loading, error, refetch };
+  return { summaries, statistics, pagination, loading, error, refetch };
+};
+
+// Simple hook for backward compatibility
+export const useCivicSummariesSimple = () => {
+  return useCivicSummaries({ limit: 20 });
 };
 
 export const useCivicArchive = () => {
@@ -88,30 +104,87 @@ export const useGovernmentBodies = () => {
   return { bodies, loading, error };
 };
 
+// Enhanced search hook with pagination and advanced filtering
 export const useCivicSearch = () => {
   const [results, setResults] = useState<CivicSummary[]>([]);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastQuery, setLastQuery] = useState<string>('');
 
-  const search = async (query: string, governmentBody = '') => {
+  const search = useCallback(async (
+    query: string, 
+    options: {
+      page?: number;
+      limit?: number;
+      commission?: string[];
+      year?: number[];
+      ai_enhanced?: boolean;
+      contentTypes?: string[];
+    } = {}
+  ) => {
     if (!query.trim()) {
       setResults([]);
+      setPagination(null);
+      setLastQuery('');
       return;
     }
 
     try {
       setLoading(true);
-      const filters = governmentBody ? { government_body: governmentBody } : {};
-      const data = await civicApi.searchSummaries(query, filters);
-      setResults(data.results || []);
       setError(null);
+      setLastQuery(query);
+      
+      const data = await civicApi.searchSummaries(query, options);
+      setResults(data.results || []);
+      setPagination(data.pagination || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
       setResults([]);
+      setPagination(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  return { results, loading, error, search };
+  const clearSearch = useCallback(() => {
+    setResults([]);
+    setPagination(null);
+    setLastQuery('');
+    setError(null);
+  }, []);
+
+  return { results, pagination, loading, error, lastQuery, search, clearSearch };
+};
+
+// Hook for getting meeting details
+export const useMeetingDetails = (meetingId: string | null) => {
+  const [meeting, setMeeting] = useState<CivicSummary | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!meetingId) {
+      setMeeting(null);
+      return;
+    }
+
+    const fetchMeeting = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await civicApi.getMeetingDetails(meetingId);
+        setMeeting(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch meeting details');
+        setMeeting(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMeeting();
+  }, [meetingId]);
+
+  return { meeting, loading, error };
 };

@@ -5,53 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Calendar, Clock, Users, Search, ExternalLink, AlertCircle, Loader2, RefreshCcw, FileText, ChevronDown, ChevronUp } from "lucide-react";
-import { civicApi } from "@/services/civicApi";
+import { Calendar, Clock, Users, Search, ExternalLink, AlertCircle, Loader2, RefreshCcw, FileText, ChevronDown, ChevronUp, Bot, Sparkles } from "lucide-react";
+import { useCivicSummariesSimple } from "@/hooks/useCivicData";
 import type { CivicSummary } from "@/services/civicApi";
 
 const MeetingSummaries = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedMeetings, setExpandedMeetings] = useState<Set<string>>(new Set());
-  const [summaries, setSummaries] = useState<CivicSummary[]>([]);
-  const [statistics, setStatistics] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadSummaries = async () => {
-      try {
-        console.log("Attempting to load meeting summaries via Cloudflare Tunnel...");
-        setIsLoading(true);
-        setError(null);
-        
-        const data = await civicApi.fetchSummaries();
-        setSummaries(data.summaries || []);
-        setStatistics(data.statistics || {});
-        console.log("✅ Successfully loaded data from Civic Beacon API");
-      } catch (err) {
-        console.error("❌ Failed to load summaries:", err);
-        setError('Failed to load meeting summaries. Please check your connection and try again.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadSummaries();
-  }, []);
-
-  const refetch = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await civicApi.fetchSummaries();
-      setSummaries(data.summaries || []);
-      setStatistics(data.statistics || {});
-    } catch (err) {
-      setError('Failed to load meeting summaries. Please check your connection and try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  
+  // Use the enhanced hook with backward compatibility
+  const { summaries, statistics, loading: isLoading, error, refetch } = useCivicSummariesSimple();
   
   // Filter summaries based on search term
   const filteredMeetings = summaries.filter(meeting =>
@@ -232,24 +195,24 @@ const MeetingSummaries = () => {
         )}
 
         {/* Statistics Display */}
-        {!isLoading && !error && statistics?.total_documents && (
+        {!isLoading && !error && (statistics?.total_documents || statistics?.total_meetings) && (
           <div className="mb-8 p-6 bg-muted/50 rounded-lg">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div>
-                <div className="text-3xl font-bold text-primary">{statistics.total_documents}</div>
-                <div className="text-sm text-muted-foreground">Total Documents</div>
+                <div className="text-3xl font-bold text-primary">{statistics.total_meetings || statistics.total_documents || 0}</div>
+                <div className="text-sm text-muted-foreground">Total Meetings</div>
               </div>
               <div>
-                <div className="text-3xl font-bold text-primary">{statistics.government_bodies}</div>
+                <div className="text-3xl font-bold text-primary">{statistics.government_bodies || 0}</div>
                 <div className="text-sm text-muted-foreground">Government Bodies</div>
               </div>
               <div>
-                <div className="text-3xl font-bold text-primary">{statistics.ai_summaries}</div>
-                <div className="text-sm text-muted-foreground">AI Summaries</div>
+                <div className="text-3xl font-bold text-primary">{statistics.ai_enhanced_count || statistics.ai_summaries || 0}</div>
+                <div className="text-sm text-muted-foreground">AI Enhanced</div>
               </div>
               <div>
-                <div className="text-3xl font-bold text-primary">{statistics.recent_updates}</div>
-                <div className="text-sm text-muted-foreground">Recent Updates</div>
+                <div className="text-3xl font-bold text-primary">{statistics.template_enhanced_count || statistics.recent_updates || 0}</div>
+                <div className="text-sm text-muted-foreground">Template Enhanced</div>
               </div>
             </div>
           </div>
@@ -295,15 +258,26 @@ const MeetingSummaries = () => {
                          </div>
                        </div>
                      </div>
-                     <div className="flex items-center gap-3">
-                        <Badge variant="secondary">{meeting.government_body}</Badge>
-                        <Badge variant="outline">{meeting.document_type}</Badge>
-                        {meeting.ai_generated && (
-                         <Badge variant="default" className="bg-accent text-accent-foreground">
-                           AI Generated
-                         </Badge>
-                       )}
-                     </div>
+                      <div className="flex items-center gap-3">
+                         <Badge variant="secondary">{meeting.government_body}</Badge>
+                         <Badge variant="outline">{meeting.document_type}</Badge>
+                         {meeting.ai_enhanced && (
+                          <Badge variant="default" className="bg-primary text-primary-foreground flex items-center gap-1">
+                            <Bot className="h-3 w-3" />
+                            AI Enhanced
+                          </Badge>
+                        )}
+                        {meeting.template_enhanced && !meeting.ai_enhanced && (
+                          <Badge variant="outline">
+                            Template Enhanced
+                          </Badge>
+                        )}
+                        {meeting.ai_generated && !meeting.ai_enhanced && (
+                          <Badge variant="default" className="bg-accent text-accent-foreground">
+                            AI Generated
+                          </Badge>
+                        )}
+                      </div>
                   </div>
                 </CardHeader>
                 
@@ -335,45 +309,106 @@ const MeetingSummaries = () => {
                             </>
                           )}
                           
-                          <CollapsibleContent className="space-y-4 animate-accordion-down data-[state=closed]:animate-accordion-up">
-                            {formatSummaryText(meeting.summary)}
-                            <div className="pt-4 border-t border-border/30">
-                              <CollapsibleTrigger asChild>
-                                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                                  <ChevronUp className="h-4 w-4 mr-2" />
-                                  Show Less
-                                </Button>
-                              </CollapsibleTrigger>
-                            </div>
-                          </CollapsibleContent>
+                           <CollapsibleContent className="space-y-4 animate-accordion-down data-[state=closed]:animate-accordion-up">
+                             {formatSummaryText(meeting.summary)}
+                             
+                             {/* Show AI insights for enhanced meetings */}
+                             {meeting.ai_insights && (
+                               <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border/30">
+                                 <div className="flex items-center gap-2 mb-3">
+                                   <Sparkles className="h-4 w-4 text-primary" />
+                                   <h5 className="text-sm font-semibold">AI Insights</h5>
+                                 </div>
+                                 
+                                 {meeting.ai_insights.key_topics && meeting.ai_insights.key_topics.length > 0 && (
+                                   <div className="mb-3">
+                                     <p className="text-xs text-muted-foreground mb-2">Key Topics:</p>
+                                     <div className="flex flex-wrap gap-1">
+                                       {meeting.ai_insights.key_topics.map((topic, index) => (
+                                         <Badge key={index} variant="outline" className="text-xs">
+                                           {topic}
+                                         </Badge>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 )}
+                                 
+                                 {meeting.ai_insights.public_impact && (
+                                   <div>
+                                     <p className="text-xs text-muted-foreground mb-1">Public Impact:</p>
+                                     <p className="text-sm">{meeting.ai_insights.public_impact}</p>
+                                   </div>
+                                 )}
+                               </div>
+                             )}
+                             
+                             {/* Show key topics if available (for non-AI enhanced meetings) */}
+                             {!meeting.ai_insights && meeting.key_topics && meeting.key_topics.length > 0 && (
+                               <div className="mt-4">
+                                 <p className="text-sm font-medium text-muted-foreground mb-2">Key Topics:</p>
+                                 <div className="flex flex-wrap gap-1">
+                                   {meeting.key_topics.map((topic, index) => (
+                                     <Badge key={index} variant="outline" className="text-xs">
+                                       {topic}
+                                     </Badge>
+                                   ))}
+                                 </div>
+                               </div>
+                             )}
+                             
+                             <div className="pt-4 border-t border-border/30">
+                               <CollapsibleTrigger asChild>
+                                 <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                                   <ChevronUp className="h-4 w-4 mr-2" />
+                                   Show Less
+                                 </Button>
+                               </CollapsibleTrigger>
+                             </div>
+                           </CollapsibleContent>
                         </div>
                       </Collapsible>
                     </div>
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex gap-3 pt-4 border-t border-border/50">
-                    {meeting.source_url && (
-                      <Button variant="outline" asChild>
-                        <a href={meeting.source_url} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          View Full Document
+                  <div className="flex flex-wrap gap-2 pt-4 border-t border-border/50">
+                    {meeting.agenda_url && (
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={meeting.agenda_url} target="_blank" rel="noopener noreferrer">
+                          <FileText className="mr-2 h-4 w-4" />
+                          Agenda
                         </a>
                       </Button>
                     )}
-                    {meeting.agenda_url && (
-                      <Button variant="outline" asChild>
-                        <a href={meeting.agenda_url} target="_blank" rel="noopener noreferrer">
+                    {meeting.minutes_url && (
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={meeting.minutes_url} target="_blank" rel="noopener noreferrer">
                           <FileText className="mr-2 h-4 w-4" />
-                          View Agenda
+                          Minutes
+                        </a>
+                      </Button>
+                    )}
+                    {meeting.video_url && (
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={meeting.video_url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Video
+                        </a>
+                      </Button>
+                    )}
+                    {meeting.source_url && (
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={meeting.source_url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Source
                         </a>
                       </Button>
                     )}
                     {meeting.pdf_url && (
-                      <Button variant="outline" asChild>
+                      <Button variant="outline" size="sm" asChild>
                         <a href={meeting.pdf_url} target="_blank" rel="noopener noreferrer">
                           <FileText className="mr-2 h-4 w-4" />
-                          View PDF
+                          PDF
                         </a>
                       </Button>
                     )}

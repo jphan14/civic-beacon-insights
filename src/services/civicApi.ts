@@ -8,10 +8,17 @@ export interface CivicSummary {
   id: string;
   title: string;
   government_body: string;
+  commission: string;
   date: string;
+  year: number;
+  time?: string;
+  location?: string;
+  meeting_type?: string;
   document_type: string;
   summary: string;
-  ai_generated: boolean;
+  ai_generated?: boolean;
+  ai_enhanced?: boolean;
+  template_enhanced?: boolean;
   created_at?: string;
   processed_at?: string;
   content_length?: number;
@@ -20,20 +27,70 @@ export interface CivicSummary {
   source_url?: string;
   pdf_url?: string;
   agenda_url?: string;
+  minutes_url?: string;
+  video_url?: string;
+  url?: string;
+  ai_insights?: {
+    has_key_decisions?: boolean;
+    has_action_items?: boolean;
+    has_financial_implications?: boolean;
+    key_topics?: string[];
+    public_impact?: string;
+  };
+  ai_analysis?: {
+    key_decisions?: Array<{
+      decision: string;
+      vote_result?: string;
+      impact?: string;
+    }>;
+    action_items?: Array<{
+      action: string;
+      responsible_party?: string;
+      timeline?: string;
+    }>;
+    financial_implications?: Array<{
+      item: string;
+      amount?: string;
+      impact?: string;
+    }>;
+    public_impact?: string;
+    next_steps?: string;
+  };
+  source?: string;
+}
+
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total_count: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+}
+
+export interface EnhancedMetadata {
+  ai_enhanced_available: number;
+  template_enhanced_available: number;
 }
 
 export interface CivicStatistics {
-  total_documents: number;
-  government_bodies: number;
-  ai_summaries: number;
-  recent_updates: number;
+  total_documents?: number;
+  total_meetings?: number;
+  government_bodies?: number;
+  ai_summaries?: number;
+  ai_enhanced_count?: number;
+  template_enhanced_count?: number;
+  recent_updates?: number;
+  version?: string;
 }
 
 export interface SummariesResponse {
   summaries: CivicSummary[];
-  statistics: CivicStatistics;
-  last_updated: string;
-  total_count: number;
+  statistics?: CivicStatistics;
+  pagination?: PaginationInfo;
+  metadata?: EnhancedMetadata;
+  last_updated?: string;
+  total_count?: number;
 }
 
 export interface ArchiveResponse {
@@ -52,13 +109,17 @@ export interface SearchResponse {
   government_body?: string;
   results: CivicSummary[];
   total_count: number;
+  pagination?: PaginationInfo;
 }
 
 export interface HealthResponse {
   status: string;
-  timestamp: string;
-  environment: string;
-  version: string;
+  total_meetings?: number;
+  ai_enhanced_count?: number;
+  template_enhanced_count?: number;
+  version?: string;
+  timestamp?: string;
+  environment?: string;
 }
 
 /**
@@ -138,10 +199,33 @@ class CivicBeaconAPI {
   }
 
   /**
-   * Fetches meeting summaries with optional filtering
+   * Fetches meeting summaries with pagination and filtering support
    */
-  async fetchSummaries(filters: Record<string, string> = {}): Promise<SummariesResponse> {
-    const params = new URLSearchParams(filters);
+  async fetchSummaries(options: {
+    page?: number;
+    limit?: number;
+    commission?: string[];
+    year?: number[];
+    ai_enhanced?: boolean;
+    template_enhanced?: boolean;
+    [key: string]: any;
+  } = {}): Promise<SummariesResponse> {
+    const params = new URLSearchParams();
+    
+    if (options.page) params.set('page', options.page.toString());
+    if (options.limit) params.set('limit', options.limit.toString());
+    if (options.commission?.length) params.set('commission', options.commission.join(','));
+    if (options.year?.length) params.set('year', options.year.join(','));
+    if (options.ai_enhanced !== undefined) params.set('ai_enhanced', options.ai_enhanced.toString());
+    if (options.template_enhanced !== undefined) params.set('template_enhanced', options.template_enhanced.toString());
+    
+    // Add any other filters
+    Object.entries(options).forEach(([key, value]) => {
+      if (!['page', 'limit', 'commission', 'year', 'ai_enhanced', 'template_enhanced'].includes(key) && value !== undefined) {
+        params.set(key, value.toString());
+      }
+    });
+
     const endpoint = `/api/summaries${params.toString() ? `?${params}` : ''}`;
     return this.fetchWithRetry(endpoint);
   }
@@ -149,9 +233,39 @@ class CivicBeaconAPI {
   /**
    * Searches summaries with query and optional filters
    */
-  async searchSummaries(query: string, filters: Record<string, string> = {}): Promise<SearchResponse> {
-    const params = new URLSearchParams({ q: query, ...filters });
+  async searchSummaries(query: string, options: {
+    page?: number;
+    limit?: number;
+    commission?: string[];
+    year?: number[];
+    ai_enhanced?: boolean;
+    contentTypes?: string[];
+    [key: string]: any;
+  } = {}): Promise<SearchResponse> {
+    const params = new URLSearchParams({ q: query });
+    
+    if (options.page) params.set('page', options.page.toString());
+    if (options.limit) params.set('limit', options.limit.toString());
+    if (options.commission?.length) params.set('commission', options.commission.join(','));
+    if (options.year?.length) params.set('year', options.year.join(','));
+    if (options.ai_enhanced !== undefined) params.set('ai_enhanced', options.ai_enhanced.toString());
+    if (options.contentTypes?.length) params.set('content_types', options.contentTypes.join(','));
+    
+    // Add any other filters
+    Object.entries(options).forEach(([key, value]) => {
+      if (!['page', 'limit', 'commission', 'year', 'ai_enhanced', 'contentTypes'].includes(key) && value !== undefined) {
+        params.set(key, value.toString());
+      }
+    });
+
     return this.fetchWithRetry(`/api/search?${params}`);
+  }
+
+  /**
+   * Gets details for a specific meeting
+   */
+  async getMeetingDetails(meetingId: string): Promise<CivicSummary> {
+    return this.fetchWithRetry(`/api/summaries/${meetingId}`);
   }
 
   /**
@@ -200,17 +314,18 @@ class CivicBeaconAPI {
 // Create singleton instance
 export const civicApi = new CivicBeaconAPI();
 
-// Export individual functions for backward compatibility
-export const getCurrentSummaries = (filters?: Record<string, string>): Promise<SummariesResponse> => 
-  civicApi.fetchSummaries(filters);
+// Export individual functions for backward compatibility and new enhanced functions
+export const getCurrentSummaries = (options?: Parameters<typeof civicApi.fetchSummaries>[0]): Promise<SummariesResponse> => 
+  civicApi.fetchSummaries(options);
 
 export const getArchive = (): Promise<ArchiveResponse> => 
   civicApi.getArchive();
 
-export const searchSummaries = (query: string, governmentBody = ''): Promise<SearchResponse> => {
-  const filters = governmentBody ? { government_body: governmentBody } : {};
-  return civicApi.searchSummaries(query, filters);
-};
+export const searchSummaries = (query: string, options?: Parameters<typeof civicApi.searchSummaries>[1]): Promise<SearchResponse> => 
+  civicApi.searchSummaries(query, options);
+
+export const getMeetingDetails = (meetingId: string): Promise<CivicSummary> =>
+  civicApi.getMeetingDetails(meetingId);
 
 export const getGovernmentBodies = (): Promise<{ government_bodies: string[]; current_count: number; archive_count: number; total_count: number }> => 
   civicApi.getGovernmentBodies();
