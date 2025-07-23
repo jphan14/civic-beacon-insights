@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { civicApi, type CivicSummary, type CivicStatistics, type ArchiveResponse, type PaginationInfo, type SummariesResponse, type SearchResponse } from '../services/civicApi';
 
 // Enhanced hook for paginated summaries with filtering
@@ -16,7 +16,17 @@ export const useCivicSummaries = (options: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSummariesDirect = useCallback(async (fetchOptions = options) => {
+  // Memoize options to prevent infinite re-renders
+  const memoizedOptions = useMemo(() => options, [
+    options.page,
+    options.limit,
+    options.commission?.join(','),
+    options.year?.join(','),
+    options.ai_enhanced,
+    options.template_enhanced
+  ]);
+
+  const fetchSummariesDirect = useCallback(async (fetchOptions = memoizedOptions) => {
     try {
       setLoading(true);
       setError(null);
@@ -32,7 +42,7 @@ export const useCivicSummaries = (options: {
     } finally {
       setLoading(false);
     }
-  }, [options]);
+  }, [memoizedOptions]);
 
   const refetch = useCallback(async () => {
     await fetchSummariesDirect();
