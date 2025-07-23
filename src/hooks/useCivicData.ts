@@ -28,6 +28,18 @@ export const useCivicSummaries = (options: {
         setError(null);
         
         const data = await civicApi.fetchSummaries(options);
+        console.log('API Response structure:', {
+          summariesCount: data.summaries?.length,
+          firstSummaryPreview: data.summaries?.[0] ? {
+            id: data.summaries[0].id,
+            title: data.summaries[0].title,
+            summaryLength: data.summaries[0].summary?.length,
+            summaryPreview: data.summaries[0].summary?.substring(0, 100),
+            aiEnhanced: data.summaries[0].ai_enhanced,
+            hasDetailedContent: data.summaries[0].summary?.length > 200
+          } : null,
+          statistics: data.statistics
+        });
         
         if (isMounted) {
           console.log('Fetch successful, data:', data);
