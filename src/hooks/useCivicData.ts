@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { civicApi, type CivicSummary, type CivicStatistics, type ArchiveResponse, type PaginationInfo, type SummariesResponse, type SearchResponse } from '../services/civicApi';
 
 // Enhanced hook for paginated summaries with filtering
@@ -16,41 +16,65 @@ export const useCivicSummaries = (options: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Memoize options to prevent infinite re-renders
-  const memoizedOptions = useMemo(() => options, [
-    options.page,
-    options.limit,
-    options.commission?.join(','),
-    options.year?.join(','),
-    options.ai_enhanced,
-    options.template_enhanced
-  ]);
+  console.log('useCivicSummaries hook called with options:', options);
 
-  const fetchSummariesDirect = useCallback(async (fetchOptions = memoizedOptions) => {
+  useEffect(() => {
+    let isMounted = true;
+    
+    const fetchSummariesDirect = async () => {
+      try {
+        console.log('Starting fetch with options:', options);
+        setLoading(true);
+        setError(null);
+        
+        const data = await civicApi.fetchSummaries(options);
+        
+        if (isMounted) {
+          console.log('Fetch successful, data:', data);
+          setSummaries(data.summaries || []);
+          setStatistics(data.statistics || {} as CivicStatistics);
+          setPagination(data.pagination || null);
+        }
+      } catch (err) {
+        console.error('Fetch error:', err);
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : String(err));
+          setSummaries([]);
+          setPagination(null);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchSummariesDirect();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [options.page, options.limit, options.commission?.join(','), options.year?.join(','), options.ai_enhanced, options.template_enhanced]);
+
+  const refetch = useCallback(async () => {
+    console.log('Refetch called');
     try {
       setLoading(true);
       setError(null);
       
-      const data = await civicApi.fetchSummaries(fetchOptions);
+      const data = await civicApi.fetchSummaries(options);
       setSummaries(data.summaries || []);
       setStatistics(data.statistics || {} as CivicStatistics);
       setPagination(data.pagination || null);
     } catch (err) {
+      console.error('Refetch error:', err);
       setError(err instanceof Error ? err.message : String(err));
       setSummaries([]);
       setPagination(null);
     } finally {
       setLoading(false);
     }
-  }, [memoizedOptions]);
-
-  const refetch = useCallback(async () => {
-    await fetchSummariesDirect();
-  }, [fetchSummariesDirect]);
-
-  useEffect(() => {
-    fetchSummariesDirect();
-  }, [fetchSummariesDirect]);
+  }, [options.page, options.limit, options.commission?.join(','), options.year?.join(','), options.ai_enhanced, options.template_enhanced]);
 
   return { summaries, statistics, pagination, loading, error, refetch };
 };
