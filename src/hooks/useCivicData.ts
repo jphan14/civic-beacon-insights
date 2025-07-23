@@ -56,8 +56,9 @@ export const useCivicSummaries = (options: {
 };
 
 // Simple hook for backward compatibility
+const defaultSimpleOptions = { limit: 20 };
 export const useCivicSummariesSimple = () => {
-  return useCivicSummaries({ limit: 20 });
+  return useCivicSummaries(defaultSimpleOptions);
 };
 
 export const useCivicArchive = () => {
