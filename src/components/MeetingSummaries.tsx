@@ -180,11 +180,9 @@ const MeetingSummaries = () => {
                 </Button>
               </div>
               <div className="text-sm text-muted-foreground mt-2">
-                <strong>Connected to QNAP API:</strong> 
+                <strong>Connected to Cloudflare API:</strong> 
                 <br />
-                <code>{navigator.userAgent && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
-                  ? 'http://hueyphanclub.myqnapcloud.com:8080' 
-                  : 'https://hueyphanclub.myqnapcloud.com:8443'}</code>
+                <code>https://consumption-demonstrate-race-camps.trycloudflare.com</code>
                 <br />
                 {statistics?.total_documents && (
                   <span>Found {statistics.total_documents} documents from {statistics.government_bodies} government bodies</span>
