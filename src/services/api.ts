@@ -1,5 +1,5 @@
-// Use a single, secure URL for all devices. The QNAP Reverse Proxy handles the rest.
-const API_BASE_URL = 'https://hueyphanclub.myqnapcloud.com:8443';
+// Use a single, secure URL for all devices. The Cloudflare tunnel handles the rest.
+const API_BASE_URL = 'https://consumption-demonstrate-race-camps.trycloudflare.com';
 
 /**
  * Fetches the meeting summaries from the unified API endpoint.
