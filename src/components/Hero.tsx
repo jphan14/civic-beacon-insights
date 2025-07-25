@@ -1,8 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, FileText, Users } from "lucide-react";
 import heroImage from "@/assets/civic-hero.jpg";
+import { useCivicSummariesSimple } from "@/hooks/useCivicData";
 
 const Hero = () => {
+  const { summaries } = useCivicSummariesSimple();
+  
+  // Calculate rounded down count to nearest 100
+  const totalMeetings = summaries.length;
+  const roundedDownCount = Math.floor(totalMeetings / 100) * 100;
   return (
     <section className="relative py-20 lg:py-32 overflow-hidden">
       {/* Background with gradient overlay */}
@@ -34,7 +40,9 @@ const Hero = () => {
                   <FileText className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <div className="font-semibold text-foreground">50+ Meetings</div>
+                  <div className="font-semibold text-foreground">
+                    {roundedDownCount > 0 ? `Over ${roundedDownCount} Meetings` : `${totalMeetings}+ Meetings`}
+                  </div>
                   <div className="text-sm text-muted-foreground">Summarized</div>
                 </div>
               </div>
