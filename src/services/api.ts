@@ -1,5 +1,5 @@
 // Use a single, secure URL for all devices. The Cloudflare tunnel handles the rest.
-const API_BASE_URL = 'https://consumption-demonstrate-race-camps.trycloudflare.com';
+const API_BASE_URL = 'https://camps-relevant-releases-wednesday.trycloudflare.com';
 
 /**
  * Fetches the meeting summaries from the unified API endpoint.

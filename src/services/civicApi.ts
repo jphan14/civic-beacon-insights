@@ -2,7 +2,7 @@
 // Based on Lovable Integration Guide v2.0
 
 // Use Cloudflare Tunnel URL for secure access to local Civic Beacon system
-const API_BASE_URL = 'https://consumption-demonstrate-race-camps.trycloudflare.com';
+const API_BASE_URL = 'https://camps-relevant-releases-wednesday.trycloudflare.com';
 
 export interface CivicSummary {
   id: string;
