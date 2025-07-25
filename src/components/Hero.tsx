@@ -24,8 +24,8 @@ const Hero = () => {
           <div className="space-y-8 animate-fade-in">
             <div className="space-y-4">
               <h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
-                Making Local Government
-                <span className="text-primary block">Transparent</span>
+                Making Local Government<br />
+                <span className="text-primary">Transparent</span>
               </h1>
               <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl">
                 Automated meeting summaries and historical archives for La Cañada Flintridge. 
