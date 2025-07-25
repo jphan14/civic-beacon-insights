@@ -231,7 +231,20 @@ const MeetingSummaries = () => {
                 <CardHeader>
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div className="space-y-2">
-                      <CardTitle className="text-2xl text-foreground">{meeting.title}</CardTitle>
+                      <CardTitle className="text-2xl text-foreground">
+                        {meeting.commission} - {meeting.title} ({(() => {
+                          try {
+                            const date = new Date(meeting.date);
+                            return isNaN(date.getTime()) ? meeting.date : date.toLocaleDateString('en-US', { 
+                              year: 'numeric', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            });
+                          } catch (error) {
+                            return meeting.date;
+                          }
+                        })()})
+                      </CardTitle>
                       <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
