@@ -338,7 +338,88 @@ const MeetingSummaries = () => {
                                    </div>
                                  )}
                                </div>
-                             )}
+                              )}
+                              
+                              {/* Show AI Analysis for enhanced meetings */}
+                              {meeting.ai_analysis && (
+                                <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border/30">
+                                  <div className="flex items-center gap-2 mb-4">
+                                    <Bot className="h-4 w-4 text-primary" />
+                                    <h5 className="text-sm font-semibold">AI Analysis</h5>
+                                  </div>
+                                  
+                                  {meeting.ai_analysis.key_decisions && meeting.ai_analysis.key_decisions.length > 0 && (
+                                    <div className="mb-4">
+                                      <p className="text-xs text-muted-foreground mb-2 font-medium">Key Decisions:</p>
+                                      <div className="space-y-2">
+                                        {meeting.ai_analysis.key_decisions.map((decision, index) => (
+                                          <div key={index} className="p-2 bg-background/50 rounded border border-border/20">
+                                            <p className="text-sm font-medium">{decision.decision}</p>
+                                            {decision.vote_result && (
+                                              <p className="text-xs text-muted-foreground mt-1">Vote: {decision.vote_result}</p>
+                                            )}
+                                            {decision.impact && (
+                                              <p className="text-xs text-muted-foreground mt-1">Impact: {decision.impact}</p>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {meeting.ai_analysis.action_items && meeting.ai_analysis.action_items.length > 0 && (
+                                    <div className="mb-4">
+                                      <p className="text-xs text-muted-foreground mb-2 font-medium">Action Items:</p>
+                                      <div className="space-y-2">
+                                        {meeting.ai_analysis.action_items.map((item, index) => (
+                                          <div key={index} className="p-2 bg-background/50 rounded border border-border/20">
+                                            <p className="text-sm font-medium">{item.action}</p>
+                                            {item.responsible_party && (
+                                              <p className="text-xs text-muted-foreground mt-1">Responsible: {item.responsible_party}</p>
+                                            )}
+                                            {item.timeline && (
+                                              <p className="text-xs text-muted-foreground mt-1">Timeline: {item.timeline}</p>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {meeting.ai_analysis.financial_implications && meeting.ai_analysis.financial_implications.length > 0 && (
+                                    <div className="mb-4">
+                                      <p className="text-xs text-muted-foreground mb-2 font-medium">Financial Implications:</p>
+                                      <div className="space-y-2">
+                                        {meeting.ai_analysis.financial_implications.map((item, index) => (
+                                          <div key={index} className="p-2 bg-background/50 rounded border border-border/20">
+                                            <p className="text-sm font-medium">{item.item}</p>
+                                            {item.amount && (
+                                              <p className="text-xs text-muted-foreground mt-1">Amount: {item.amount}</p>
+                                            )}
+                                            {item.impact && (
+                                              <p className="text-xs text-muted-foreground mt-1">Impact: {item.impact}</p>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {meeting.ai_analysis.public_impact && (
+                                    <div className="mb-4">
+                                      <p className="text-xs text-muted-foreground mb-2 font-medium">Public Impact:</p>
+                                      <p className="text-sm">{meeting.ai_analysis.public_impact}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {meeting.ai_analysis.next_steps && (
+                                    <div>
+                                      <p className="text-xs text-muted-foreground mb-2 font-medium">Next Steps:</p>
+                                      <p className="text-sm">{meeting.ai_analysis.next_steps}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                              
                              {/* Show key topics if available (for non-AI enhanced meetings) */}
                              {!meeting.ai_insights && meeting.key_topics && meeting.key_topics.length > 0 && (
