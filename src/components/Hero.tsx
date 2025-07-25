@@ -34,25 +34,16 @@ const Hero = () => {
             </div>
 
             {/* Stats */}
-            <div className="flex flex-wrap gap-8 py-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <FileText className="h-6 w-6 text-primary" />
+            <div className="py-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-primary/10 rounded-xl">
+                  <FileText className="h-8 w-8 text-primary" />
                 </div>
                 <div>
-                  <div className="font-semibold text-foreground">
+                  <div className="text-2xl font-bold text-foreground">
                     {roundedDownCount > 0 ? `Over ${roundedDownCount} Meetings` : `${totalMeetings}+ Meetings`}
                   </div>
-                  <div className="text-sm text-muted-foreground">Summarized</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-accent/10 rounded-lg">
-                  <Users className="h-6 w-6 text-accent" />
-                </div>
-                <div>
-                  <div className="font-semibold text-foreground">Community</div>
-                  <div className="text-sm text-muted-foreground">Focused</div>
+                  <div className="text-base text-muted-foreground">AI Summarized</div>
                 </div>
               </div>
             </div>
