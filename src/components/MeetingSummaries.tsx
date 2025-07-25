@@ -286,26 +286,26 @@ const MeetingSummaries = () => {
                          <span>{meeting.government_body}</span>
                        </div>
                      </div>
-                     <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3">
                         <Badge variant="secondary">{meeting.government_body}</Badge>
                         <Badge variant="outline">{meeting.document_type}</Badge>
                         {meeting.ai_enhanced && (
-                         <Badge variant="default" className="bg-primary text-primary-foreground flex items-center gap-1">
-                           <Bot className="h-3 w-3" />
-                           AI Enhanced
-                         </Badge>
-                       )}
-                       {meeting.template_enhanced && !meeting.ai_enhanced && (
-                         <Badge variant="outline">
-                           Template Enhanced
-                         </Badge>
-                       )}
-                       {meeting.ai_generated && !meeting.ai_enhanced && (
-                         <Badge variant="default" className="bg-accent text-accent-foreground">
-                           AI Generated
-                         </Badge>
-                       )}
-                     </div>
+                          <Badge variant="default" className="bg-primary text-primary-foreground flex items-center gap-1">
+                            <Bot className="h-3 w-3" />
+                            AI Enhanced
+                          </Badge>
+                        )}
+                        {meeting.template_enhanced && !meeting.ai_enhanced && (
+                          <Badge variant="outline">
+                            Template Enhanced
+                          </Badge>
+                        )}
+                        {meeting.ai_generated && !meeting.ai_enhanced && (
+                          <Badge variant="default" className="bg-accent text-accent-foreground">
+                            AI Generated
+                          </Badge>
+                        )}
+                      </div>
                    </div>
                 </CardHeader>
                 
