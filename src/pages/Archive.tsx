@@ -167,15 +167,11 @@ const Archive = () => {
         );
       }
       
+      // For sections without clear headers, just show the content
       if (trimmedSection.length > 50) {
         return (
-          <div key={index} className="mb-4">
-            <h5 className="font-semibold text-foreground mb-2 flex items-center">
-              Summary Section
-            </h5>
-            <div className="text-muted-foreground leading-relaxed pl-6 whitespace-pre-line">
-              {trimmedSection}
-            </div>
+          <div key={index} className="text-muted-foreground leading-relaxed mb-4 whitespace-pre-line">
+            {trimmedSection}
           </div>
         );
       }
