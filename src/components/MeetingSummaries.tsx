@@ -122,7 +122,6 @@ const MeetingSummaries = () => {
         return (
           <div key={index} className="mb-4">
             <h5 className="font-semibold text-foreground mb-2 flex items-center">
-              <span className="text-primary mr-2">{index + 1}.</span>
               Summary Section
             </h5>
             <div className="text-muted-foreground leading-relaxed pl-6 whitespace-pre-line">
