@@ -310,12 +310,8 @@ const MeetingSummaries = () => {
                 </CardHeader>
                 
                 <CardContent className="space-y-6">
-                  {/* Summary Preview (first 200 characters) */}
                   <div>
-                    <div className="mb-3">
-                      <h4 className="font-semibold text-foreground text-lg mb-4">Meeting Summary</h4>
-                      
-                      {/* Two-column layout for content */}
+                    {/* Two-column layout for content */}
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
                         {/* Left Column - Summary */}
                         <div className="space-y-4">
@@ -434,10 +430,9 @@ const MeetingSummaries = () => {
                               </div>
                             </div>
                           )}
-                        </div>
                       </div>
-                     </div>
-                   </div>
+                    </div>
+                  </div>
  
                    {/* Action Buttons */}
                    <div className="flex flex-wrap gap-2 pt-4 border-t border-border/50">
