@@ -344,21 +344,108 @@ const MeetingSummaries = () => {
                             </>
                           )}
                           
-                           <CollapsibleContent className="space-y-4 animate-accordion-down data-[state=closed]:animate-accordion-up">
-                             {formatSummaryText(meeting.summary)}
-                             
-                             {/* Show AI insights for enhanced meetings */}
-                             {meeting.ai_insights && (
-                               <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border/30">
-                                 <div className="flex items-center gap-2 mb-3">
-                                   <Sparkles className="h-4 w-4 text-primary" />
-                                   <h5 className="text-sm font-semibold">AI Insights</h5>
+                           <CollapsibleContent className="animate-accordion-down data-[state=closed]:animate-accordion-up">
+                             {/* Two-column layout for expanded content */}
+                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
+                               {/* Left Column - Summary */}
+                               <div className="space-y-4">
+                                 <h5 className="font-semibold text-foreground text-base">Full Summary</h5>
+                                 <div className="space-y-4">
+                                   {formatSummaryText(meeting.summary)}
                                  </div>
+                               </div>
+                               
+                               {/* Right Column - AI Analysis Components */}
+                               <div className="space-y-6">
+                                 {/* Key Decisions */}
+                                 {meeting.ai_analysis?.key_decisions && meeting.ai_analysis.key_decisions.length > 0 && (
+                                   <div>
+                                     <h5 className="font-semibold text-foreground text-base mb-3">Key Decisions</h5>
+                                     <div className="space-y-3">
+                                       {meeting.ai_analysis.key_decisions.map((decision, index) => (
+                                         <div key={index} className="p-3 bg-muted/30 rounded-lg border border-border/30">
+                                           <p className="text-sm font-medium mb-2">{decision.decision}</p>
+                                           {decision.vote_result && (
+                                             <p className="text-xs text-muted-foreground">Vote: {decision.vote_result}</p>
+                                           )}
+                                           {decision.impact && (
+                                             <p className="text-xs text-muted-foreground mt-1">Impact: {decision.impact}</p>
+                                           )}
+                                         </div>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 )}
                                  
-                                 {meeting.ai_insights.key_topics && meeting.ai_insights.key_topics.length > 0 && (
-                                   <div className="mb-3">
-                                     <p className="text-xs text-muted-foreground mb-2">Key Topics:</p>
-                                     <div className="flex flex-wrap gap-1">
+                                 {/* Action Items */}
+                                 {meeting.ai_analysis?.action_items && meeting.ai_analysis.action_items.length > 0 && (
+                                   <div>
+                                     <h5 className="font-semibold text-foreground text-base mb-3">Action Items</h5>
+                                     <div className="space-y-3">
+                                       {meeting.ai_analysis.action_items.map((item, index) => (
+                                         <div key={index} className="p-3 bg-muted/30 rounded-lg border border-border/30">
+                                           <p className="text-sm font-medium mb-2">{item.action}</p>
+                                           {item.responsible_party && (
+                                             <p className="text-xs text-muted-foreground">Responsible: {item.responsible_party}</p>
+                                           )}
+                                           {item.timeline && (
+                                             <p className="text-xs text-muted-foreground mt-1">Timeline: {item.timeline}</p>
+                                           )}
+                                         </div>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 )}
+                                 
+                                 {/* Financial Implications */}
+                                 {meeting.ai_analysis?.financial_implications && meeting.ai_analysis.financial_implications.length > 0 && (
+                                   <div>
+                                     <h5 className="font-semibold text-foreground text-base mb-3">Financial Implications</h5>
+                                     <div className="space-y-3">
+                                       {meeting.ai_analysis.financial_implications.map((item, index) => (
+                                         <div key={index} className="p-3 bg-muted/30 rounded-lg border border-border/30">
+                                           <p className="text-sm font-medium mb-2">{item.item}</p>
+                                           {item.amount && (
+                                             <p className="text-xs text-muted-foreground">Amount: {item.amount}</p>
+                                           )}
+                                           {item.impact && (
+                                             <p className="text-xs text-muted-foreground mt-1">Impact: {item.impact}</p>
+                                           )}
+                                         </div>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 )}
+                                 
+                                 {/* Public Impact */}
+                                 {meeting.ai_analysis?.public_impact && (
+                                   <div>
+                                     <h5 className="font-semibold text-foreground text-base mb-3">Public Impact</h5>
+                                     <div className="p-3 bg-muted/30 rounded-lg border border-border/30">
+                                       <p className="text-sm">{meeting.ai_analysis.public_impact}</p>
+                                     </div>
+                                   </div>
+                                 )}
+                                 
+                                 {/* Next Steps */}
+                                 {meeting.ai_analysis?.next_steps && Array.isArray(meeting.ai_analysis.next_steps) && meeting.ai_analysis.next_steps.length > 0 && (
+                                   <div>
+                                     <h5 className="font-semibold text-foreground text-base mb-3">Next Steps</h5>
+                                     <div className="space-y-2">
+                                       {meeting.ai_analysis.next_steps.map((step, index) => (
+                                         <div key={index} className="p-3 bg-muted/30 rounded-lg border border-border/30">
+                                           <p className="text-sm">{step}</p>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 )}
+                                 
+                                 {/* Key Topics */}
+                                 {meeting.ai_insights?.key_topics && meeting.ai_insights.key_topics.length > 0 && (
+                                   <div>
+                                     <h5 className="font-semibold text-foreground text-base mb-3">Key Topics</h5>
+                                     <div className="flex flex-wrap gap-2">
                                        {meeting.ai_insights.key_topics.map((topic, index) => (
                                          <Badge key={index} variant="outline" className="text-xs">
                                            {topic}
@@ -368,126 +455,34 @@ const MeetingSummaries = () => {
                                    </div>
                                  )}
                                  
-                                 {meeting.ai_insights.public_impact && (
+                                 {/* Additional Public Impact from AI Insights */}
+                                 {meeting.ai_insights?.public_impact && meeting.ai_insights.public_impact !== meeting.ai_analysis?.public_impact && (
                                    <div>
-                                     <p className="text-xs text-muted-foreground mb-1">Public Impact:</p>
-                                     <p className="text-sm">{meeting.ai_insights.public_impact}</p>
+                                     <h5 className="font-semibold text-foreground text-base mb-3">Additional Insights</h5>
+                                     <div className="p-3 bg-muted/30 rounded-lg border border-border/30">
+                                       <p className="text-sm">{meeting.ai_insights.public_impact}</p>
+                                     </div>
                                    </div>
                                  )}
                                </div>
-                              )}
-                              
-                              {/* Show AI Analysis for enhanced meetings */}
-                              {meeting.ai_analysis && (
-                                <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border/30">
-                                  <div className="flex items-center gap-2 mb-4">
-                                    <Bot className="h-4 w-4 text-primary" />
-                                    <h5 className="text-sm font-semibold">AI Analysis</h5>
-                                  </div>
-                                  
-                                  {meeting.ai_analysis.key_decisions && meeting.ai_analysis.key_decisions.length > 0 && (
-                                    <div className="mb-4">
-                                      <p className="text-xs text-muted-foreground mb-2 font-medium">Key Decisions:</p>
-                                      <div className="space-y-2">
-                                        {meeting.ai_analysis.key_decisions.map((decision, index) => (
-                                          <div key={index} className="p-2 bg-background/50 rounded border border-border/20">
-                                            <p className="text-sm font-medium">{decision.decision}</p>
-                                            {decision.vote_result && (
-                                              <p className="text-xs text-muted-foreground mt-1">Vote: {decision.vote_result}</p>
-                                            )}
-                                            {decision.impact && (
-                                              <p className="text-xs text-muted-foreground mt-1">Impact: {decision.impact}</p>
-                                            )}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                  
-                                  {meeting.ai_analysis.action_items && meeting.ai_analysis.action_items.length > 0 && (
-                                    <div className="mb-4">
-                                      <p className="text-xs text-muted-foreground mb-2 font-medium">Action Items:</p>
-                                      <div className="space-y-2">
-                                        {meeting.ai_analysis.action_items.map((item, index) => (
-                                          <div key={index} className="p-2 bg-background/50 rounded border border-border/20">
-                                            <p className="text-sm font-medium">{item.action}</p>
-                                            {item.responsible_party && (
-                                              <p className="text-xs text-muted-foreground mt-1">Responsible: {item.responsible_party}</p>
-                                            )}
-                                            {item.timeline && (
-                                              <p className="text-xs text-muted-foreground mt-1">Timeline: {item.timeline}</p>
-                                            )}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                  
-                                  {meeting.ai_analysis.financial_implications && meeting.ai_analysis.financial_implications.length > 0 && (
-                                    <div className="mb-4">
-                                      <p className="text-xs text-muted-foreground mb-2 font-medium">Financial Implications:</p>
-                                      <div className="space-y-2">
-                                        {meeting.ai_analysis.financial_implications.map((item, index) => (
-                                          <div key={index} className="p-2 bg-background/50 rounded border border-border/20">
-                                            <p className="text-sm font-medium">{item.item}</p>
-                                            {item.amount && (
-                                              <p className="text-xs text-muted-foreground mt-1">Amount: {item.amount}</p>
-                                            )}
-                                            {item.impact && (
-                                              <p className="text-xs text-muted-foreground mt-1">Impact: {item.impact}</p>
-                                            )}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                  
-                                  {meeting.ai_analysis.public_impact && (
-                                    <div className="mb-4">
-                                      <p className="text-xs text-muted-foreground mb-2 font-medium">Public Impact:</p>
-                                      <p className="text-sm">{meeting.ai_analysis.public_impact}</p>
-                                    </div>
-                                  )}
-                                  
-                                  {meeting.ai_analysis.next_steps && (
-                                    <div>
-                                      <p className="text-xs text-muted-foreground mb-2 font-medium">Next Steps:</p>
-                                      <p className="text-sm">{meeting.ai_analysis.next_steps}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
+                             </div>
                              
-                             {/* Show key topics if available (for non-AI enhanced meetings) */}
-                             {!meeting.ai_insights && meeting.key_topics && meeting.key_topics.length > 0 && (
-                               <div className="mt-4">
-                                 <p className="text-sm font-medium text-muted-foreground mb-2">Key Topics:</p>
-                                 <div className="flex flex-wrap gap-1">
-                                   {meeting.key_topics.map((topic, index) => (
-                                     <Badge key={index} variant="outline" className="text-xs">
-                                       {topic}
-                                     </Badge>
-                                   ))}
-                                 </div>
-                               </div>
-                             )}
-                             
-                             <div className="pt-4 border-t border-border/30">
+                             <div className="pt-6">
                                <CollapsibleTrigger asChild>
-                                 <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                                 <Button variant="outline" size="default" className="border-primary/20 text-primary hover:bg-primary/5">
                                    <ChevronUp className="h-4 w-4 mr-2" />
                                    Show Less
                                  </Button>
                                </CollapsibleTrigger>
-                             </div>
+                              </div>
                            </CollapsibleContent>
-                        </div>
-                      </Collapsible>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-wrap gap-2 pt-4 border-t border-border/50">
+                         </div>
+                       </Collapsible>
+                     </div>
+                   </div>
+ 
+                   {/* Action Buttons */}
+                   <div className="flex flex-wrap gap-2 pt-4 border-t border-border/50">
                     {meeting.agenda_url && (
                       <Button variant="outline" size="sm" asChild>
                         <a href={meeting.agenda_url} target="_blank" rel="noopener noreferrer">
