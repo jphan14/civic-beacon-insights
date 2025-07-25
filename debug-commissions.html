@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Commissions</title>
+</head>
+<body>
+    <h1>Commission Debug</h1>
+    <div id="output"></div>
+    
+    <script>
+        async function checkCommissions() {
+            const output = document.getElementById('output');
+            
+            try {
+                // Check government bodies endpoint
+                const bodiesResponse = await fetch('https://photographs-defend-athletics-alike.trycloudflare.com/api/government-bodies');
+                const bodiesData = await bodiesResponse.json();
+                
+                output.innerHTML += '<h2>Government Bodies Endpoint:</h2>';
+                output.innerHTML += '<pre>' + JSON.stringify(bodiesData, null, 2) + '</pre>';
+                
+                // Check a few different pages for commission variety
+                for (let page = 1; page <= 5; page++) {
+                    const summariesResponse = await fetch(`https://photographs-defend-athletics-alike.trycloudflare.com/api/summaries?page=${page}&limit=20`);
+                    const summariesData = await summariesResponse.json();
+                    
+                    const commissions = [...new Set(summariesData.summaries?.map(s => s.commission))];
+                    const govBodies = [...new Set(summariesData.summaries?.map(s => s.government_body))];
+                    
+                    output.innerHTML += `<h3>Page ${page}:</h3>`;
+                    output.innerHTML += `<p>Commissions: ${commissions.join(', ')}</p>`;
+                    output.innerHTML += `<p>Government Bodies: ${govBodies.join(', ')}</p>`;
+                }
+                
+            } catch (error) {
+                output.innerHTML += '<p>Error: ' + error.message + '</p>';
+            }
+        }
+        
+        checkCommissions();
+    </script>
+</body>
+</html>
