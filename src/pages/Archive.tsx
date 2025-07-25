@@ -430,162 +430,127 @@ const Archive = () => {
                     <div className="mb-3">
                       <h4 className="font-semibold text-foreground text-lg mb-4">Meeting Summary</h4>
                       
-                      <Collapsible open={isExpanded} onOpenChange={() => toggleMeetingExpanded(meetingId)}>
+                      {/* Two-column layout for content */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
+                        {/* Left Column - Summary */}
                         <div className="space-y-4">
-                          {!isExpanded && (
-                            <>
-                              <p className="text-muted-foreground leading-relaxed">
-                                {meeting.summary.length > 200 
-                                  ? `${meeting.summary.substring(0, 200)}...`
-                                  : meeting.summary
-                                }
-                              </p>
-                              
-                              <div className="pt-4">
-                                <CollapsibleTrigger asChild>
-                                  <Button variant="outline" size="default" className="border-primary/20 text-primary hover:bg-primary/5">
-                                    <ChevronDown className="h-4 w-4 mr-2" />
-                                    Read Full Summary
-                                  </Button>
-                                </CollapsibleTrigger>
+                          <h5 className="font-semibold text-foreground text-base">Full Summary</h5>
+                          <div className="space-y-4">
+                            {formatSummaryText(meeting.summary)}
+                          </div>
+                        </div>
+                        
+                        {/* Right Column - AI Analysis Components */}
+                        <div className="space-y-6">
+                          {/* Key Decisions */}
+                          {meeting.ai_analysis?.key_decisions && meeting.ai_analysis.key_decisions.length > 0 && (
+                            <div>
+                              <h5 className="font-semibold text-foreground text-base mb-3">Key Decisions</h5>
+                              <div className="space-y-3">
+                                {meeting.ai_analysis.key_decisions.map((decision, index) => (
+                                  <div key={index} className="p-3 bg-muted/30 rounded-lg border border-border/30">
+                                    <p className="text-sm font-medium mb-2">{decision.decision}</p>
+                                    {decision.vote_result && (
+                                      <p className="text-xs text-muted-foreground">Vote: {decision.vote_result}</p>
+                                    )}
+                                    {decision.impact && (
+                                      <p className="text-xs text-muted-foreground mt-1">Impact: {decision.impact}</p>
+                                    )}
+                                  </div>
+                                ))}
                               </div>
-                            </>
+                            </div>
                           )}
                           
-                           <CollapsibleContent className="animate-accordion-down data-[state=closed]:animate-accordion-up">
-                             {/* Two-column layout for expanded content */}
-                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
-                               {/* Left Column - Summary */}
-                               <div className="space-y-4">
-                                 <h5 className="font-semibold text-foreground text-base">Full Summary</h5>
-                                 <div className="space-y-4">
-                                   {formatSummaryText(meeting.summary)}
-                                 </div>
-                               </div>
-                               
-                               {/* Right Column - AI Analysis Components */}
-                               <div className="space-y-6">
-                                 {/* Key Decisions */}
-                                 {meeting.ai_analysis?.key_decisions && meeting.ai_analysis.key_decisions.length > 0 && (
-                                   <div>
-                                     <h5 className="font-semibold text-foreground text-base mb-3">Key Decisions</h5>
-                                     <div className="space-y-3">
-                                       {meeting.ai_analysis.key_decisions.map((decision, index) => (
-                                         <div key={index} className="p-3 bg-muted/30 rounded-lg border border-border/30">
-                                           <p className="text-sm font-medium mb-2">{decision.decision}</p>
-                                           {decision.vote_result && (
-                                             <p className="text-xs text-muted-foreground">Vote: {decision.vote_result}</p>
-                                           )}
-                                           {decision.impact && (
-                                             <p className="text-xs text-muted-foreground mt-1">Impact: {decision.impact}</p>
-                                           )}
-                                         </div>
-                                       ))}
-                                     </div>
-                                   </div>
-                                 )}
-                                 
-                                 {/* Action Items */}
-                                 {meeting.ai_analysis?.action_items && meeting.ai_analysis.action_items.length > 0 && (
-                                   <div>
-                                     <h5 className="font-semibold text-foreground text-base mb-3">Action Items</h5>
-                                     <div className="space-y-3">
-                                       {meeting.ai_analysis.action_items.map((item, index) => (
-                                         <div key={index} className="p-3 bg-muted/30 rounded-lg border border-border/30">
-                                           <p className="text-sm font-medium mb-2">{item.action}</p>
-                                           {item.responsible_party && (
-                                             <p className="text-xs text-muted-foreground">Responsible: {item.responsible_party}</p>
-                                           )}
-                                           {item.timeline && (
-                                             <p className="text-xs text-muted-foreground mt-1">Timeline: {item.timeline}</p>
-                                           )}
-                                         </div>
-                                       ))}
-                                     </div>
-                                   </div>
-                                 )}
-                                 
-                                 {/* Financial Implications */}
-                                 {meeting.ai_analysis?.financial_implications && meeting.ai_analysis.financial_implications.length > 0 && (
-                                   <div>
-                                     <h5 className="font-semibold text-foreground text-base mb-3">Financial Implications</h5>
-                                     <div className="space-y-3">
-                                       {meeting.ai_analysis.financial_implications.map((item, index) => (
-                                         <div key={index} className="p-3 bg-muted/30 rounded-lg border border-border/30">
-                                           <p className="text-sm font-medium mb-2">{item.item}</p>
-                                           {item.amount && (
-                                             <p className="text-xs text-muted-foreground">Amount: {item.amount}</p>
-                                           )}
-                                           {item.impact && (
-                                             <p className="text-xs text-muted-foreground mt-1">Impact: {item.impact}</p>
-                                           )}
-                                         </div>
-                                       ))}
-                                     </div>
-                                   </div>
-                                 )}
-                                 
-                                 {/* Public Impact */}
-                                 {meeting.ai_analysis?.public_impact && (
-                                   <div>
-                                     <h5 className="font-semibold text-foreground text-base mb-3">Public Impact</h5>
-                                     <div className="p-3 bg-muted/30 rounded-lg border border-border/30">
-                                       <p className="text-sm">{meeting.ai_analysis.public_impact}</p>
-                                     </div>
-                                   </div>
-                                 )}
-                                 
-                                 {/* Next Steps */}
-                                 {meeting.ai_analysis?.next_steps && Array.isArray(meeting.ai_analysis.next_steps) && meeting.ai_analysis.next_steps.length > 0 && (
-                                   <div>
-                                     <h5 className="font-semibold text-foreground text-base mb-3">Next Steps</h5>
-                                     <div className="space-y-2">
-                                       {meeting.ai_analysis.next_steps.map((step, index) => (
-                                         <div key={index} className="p-3 bg-muted/30 rounded-lg border border-border/30">
-                                           <p className="text-sm">{step}</p>
-                                         </div>
-                                       ))}
-                                     </div>
-                                   </div>
-                                 )}
-                                 
-                                 {/* Key Topics */}
-                                 {meeting.ai_insights?.key_topics && meeting.ai_insights.key_topics.length > 0 && (
-                                   <div>
-                                     <h5 className="font-semibold text-foreground text-base mb-3">Key Topics</h5>
-                                     <div className="flex flex-wrap gap-2">
-                                       {meeting.ai_insights.key_topics.map((topic, index) => (
-                                         <Badge key={index} variant="outline" className="text-xs">
-                                           {topic}
-                                         </Badge>
-                                       ))}
-                                     </div>
-                                   </div>
-                                 )}
-                                 
-                                 {/* Additional Public Impact from AI Insights */}
-                                 {meeting.ai_insights?.public_impact && meeting.ai_insights.public_impact !== meeting.ai_analysis?.public_impact && (
-                                   <div>
-                                     <h5 className="font-semibold text-foreground text-base mb-3">Additional Insights</h5>
-                                     <div className="p-3 bg-muted/30 rounded-lg border border-border/30">
-                                       <p className="text-sm">{meeting.ai_insights.public_impact}</p>
-                                     </div>
-                                   </div>
-                                 )}
-                               </div>
-                             </div>
-                             
-                             <div className="pt-6">
-                               <CollapsibleTrigger asChild>
-                                 <Button variant="outline" size="default" className="border-primary/20 text-primary hover:bg-primary/5">
-                                   <ChevronUp className="h-4 w-4 mr-2" />
-                                   Show Less
-                                 </Button>
-                               </CollapsibleTrigger>
-                             </div>
-                           </CollapsibleContent>
+                          {/* Action Items */}
+                          {meeting.ai_analysis?.action_items && meeting.ai_analysis.action_items.length > 0 && (
+                            <div>
+                              <h5 className="font-semibold text-foreground text-base mb-3">Action Items</h5>
+                              <div className="space-y-3">
+                                {meeting.ai_analysis.action_items.map((item, index) => (
+                                  <div key={index} className="p-3 bg-muted/30 rounded-lg border border-border/30">
+                                    <p className="text-sm font-medium mb-2">{item.action}</p>
+                                    {item.responsible_party && (
+                                      <p className="text-xs text-muted-foreground">Responsible: {item.responsible_party}</p>
+                                    )}
+                                    {item.timeline && (
+                                      <p className="text-xs text-muted-foreground mt-1">Timeline: {item.timeline}</p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Financial Implications */}
+                          {meeting.ai_analysis?.financial_implications && meeting.ai_analysis.financial_implications.length > 0 && (
+                            <div>
+                              <h5 className="font-semibold text-foreground text-base mb-3">Financial Implications</h5>
+                              <div className="space-y-3">
+                                {meeting.ai_analysis.financial_implications.map((item, index) => (
+                                  <div key={index} className="p-3 bg-muted/30 rounded-lg border border-border/30">
+                                    <p className="text-sm font-medium mb-2">{item.item}</p>
+                                    {item.amount && (
+                                      <p className="text-xs text-muted-foreground">Amount: {item.amount}</p>
+                                    )}
+                                    {item.impact && (
+                                      <p className="text-xs text-muted-foreground mt-1">Impact: {item.impact}</p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Public Impact */}
+                          {meeting.ai_analysis?.public_impact && (
+                            <div>
+                              <h5 className="font-semibold text-foreground text-base mb-3">Public Impact</h5>
+                              <div className="p-3 bg-muted/30 rounded-lg border border-border/30">
+                                <p className="text-sm">{meeting.ai_analysis.public_impact}</p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Next Steps */}
+                          {meeting.ai_analysis?.next_steps && Array.isArray(meeting.ai_analysis.next_steps) && meeting.ai_analysis.next_steps.length > 0 && (
+                            <div>
+                              <h5 className="font-semibold text-foreground text-base mb-3">Next Steps</h5>
+                              <div className="space-y-2">
+                                {meeting.ai_analysis.next_steps.map((step, index) => (
+                                  <div key={index} className="p-3 bg-muted/30 rounded-lg border border-border/30">
+                                    <p className="text-sm">{step}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Key Topics */}
+                          {meeting.ai_insights?.key_topics && meeting.ai_insights.key_topics.length > 0 && (
+                            <div>
+                              <h5 className="font-semibold text-foreground text-base mb-3">Key Topics</h5>
+                              <div className="flex flex-wrap gap-2">
+                                {meeting.ai_insights.key_topics.map((topic, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {topic}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Additional Public Impact from AI Insights */}
+                          {meeting.ai_insights?.public_impact && meeting.ai_insights.public_impact !== meeting.ai_analysis?.public_impact && (
+                            <div>
+                              <h5 className="font-semibold text-foreground text-base mb-3">Additional Insights</h5>
+                              <div className="p-3 bg-muted/30 rounded-lg border border-border/30">
+                                <p className="text-sm">{meeting.ai_insights.public_impact}</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </Collapsible>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
