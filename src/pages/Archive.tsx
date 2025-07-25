@@ -5,39 +5,91 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Calendar, Clock, Users, Search, ExternalLink, AlertCircle, Loader2, RefreshCcw, FileText, ChevronDown, ChevronUp, Bot, Sparkles, Archive as ArchiveIcon } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, Clock, Users, Search, ExternalLink, AlertCircle, Loader2, RefreshCcw, FileText, ChevronDown, ChevronUp, Bot, Sparkles, Filter, ArrowLeft, CalendarIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCivicSummariesSimple } from "@/hooks/useCivicData";
 import type { CivicSummary } from "@/services/civicApi";
 
-const MeetingSummaries = () => {
+const Archive = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCommission, setSelectedCommission] = useState<string>("all");
+  const [dateRange, setDateRange] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("date-desc");
   const [expandedMeetings, setExpandedMeetings] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   
-  // Use the enhanced hook with backward compatibility
+  // Use the enhanced hook
   const { summaries, statistics, loading: isLoading, error, refetch } = useCivicSummariesSimple();
   
-  // Filter summaries to last 30 days
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  // Get unique commissions for filter
+  const commissions = Array.from(new Set(summaries.map(meeting => meeting.commission).filter(Boolean)));
   
-  const recentSummaries = summaries.filter(meeting => {
-    try {
-      const meetingDate = new Date(meeting.date);
-      return meetingDate >= thirtyDaysAgo;
-    } catch (error) {
-      console.error('Date parsing error:', error, 'for date:', meeting.date);
-      return true; // Include meetings with unparseable dates
-    }
-  });
+  // Filter and sort summaries
+  const filteredAndSortedMeetings = summaries
+    .filter(meeting => {
+      // Search filter
+      const matchesSearch = searchTerm === "" || 
+        meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        meeting.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        meeting.government_body.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        meeting.commission?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Commission filter
+      const matchesCommission = selectedCommission === "all" || meeting.commission === selectedCommission;
+      
+      // Date range filter
+      let matchesDate = true;
+      if (dateRange !== "all") {
+        const meetingDate = new Date(meeting.date);
+        const now = new Date();
+        
+        switch (dateRange) {
+          case "30-days":
+            matchesDate = (now.getTime() - meetingDate.getTime()) <= (30 * 24 * 60 * 60 * 1000);
+            break;
+          case "3-months":
+            matchesDate = (now.getTime() - meetingDate.getTime()) <= (90 * 24 * 60 * 60 * 1000);
+            break;
+          case "6-months":
+            matchesDate = (now.getTime() - meetingDate.getTime()) <= (180 * 24 * 60 * 60 * 1000);
+            break;
+          case "1-year":
+            matchesDate = (now.getTime() - meetingDate.getTime()) <= (365 * 24 * 60 * 60 * 1000);
+            break;
+        }
+      }
+      
+      return matchesSearch && matchesCommission && matchesDate;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "date-desc":
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        case "date-asc":
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        case "commission":
+          return (a.commission || "").localeCompare(b.commission || "");
+        case "title":
+          return a.title.localeCompare(b.title);
+        default:
+          return 0;
+      }
+    });
   
-  // Filter summaries based on search term
-  const filteredMeetings = recentSummaries.filter(meeting =>
-    meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    meeting.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    meeting.government_body.toLowerCase().includes(searchTerm.toLowerCase())
+  // Pagination
+  const totalPages = Math.ceil(filteredAndSortedMeetings.length / itemsPerPage);
+  const paginatedMeetings = filteredAndSortedMeetings.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
-
+  
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCommission, dateRange, sortBy]);
+  
   // Toggle expanded state for a meeting
   const toggleMeetingExpanded = (meetingId: string) => {
     const newExpanded = new Set(expandedMeetings);
@@ -51,28 +103,22 @@ const MeetingSummaries = () => {
 
   // Function to format summary text with enumerated headings
   const formatSummaryText = (text: string) => {
-    // Split by line breaks first to avoid issues with years and numbers in content
     const lines = text.split('\n');
     const sections: string[] = [];
     let currentSection = '';
     
     lines.forEach(line => {
       const trimmedLine = line.trim();
-      
-      // Check if this line is a section header (number followed by period and text, or all caps with colon)
       const isNumberedHeader = /^\d+\.\s+[A-Z]/.test(trimmedLine);
       const isAllCapsHeader = /^[A-Z][A-Z\s]*:/.test(trimmedLine);
       const isTitleCaseHeader = /^[A-Z][^.]*:/.test(trimmedLine) && trimmedLine.split(':')[0].length > 3;
       
       if ((isNumberedHeader || isAllCapsHeader || isTitleCaseHeader) && currentSection.trim()) {
-        // Save previous section
         sections.push(currentSection.trim());
         currentSection = trimmedLine;
       } else if (isNumberedHeader || isAllCapsHeader || isTitleCaseHeader) {
-        // Start new section
         currentSection = trimmedLine;
       } else {
-        // Add to current section
         if (currentSection) {
           currentSection += '\n' + line;
         } else {
@@ -81,7 +127,6 @@ const MeetingSummaries = () => {
       }
     });
     
-    // Add the last section
     if (currentSection.trim()) {
       sections.push(currentSection.trim());
     }
@@ -94,7 +139,6 @@ const MeetingSummaries = () => {
       const firstLine = lines[0];
       const restOfContent = lines.slice(1).join('\n').trim();
       
-      // Check if first line is a header
       const isNumbered = /^\d+\.\s/.test(firstLine);
       const isHeading = /^[A-Z][A-Z\s]*:/.test(firstLine) || /^[A-Z][^.]*:/.test(firstLine);
       
@@ -117,7 +161,6 @@ const MeetingSummaries = () => {
         );
       }
       
-      // For sections without clear headers, add enumeration if significant
       if (trimmedSection.length > 50) {
         return (
           <div key={index} className="mb-4">
@@ -141,33 +184,95 @@ const MeetingSummaries = () => {
   };
 
   return (
-    <section id="summaries" className="py-20">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center space-y-4 mb-12">
-          <h2 className="text-3xl lg:text-5xl font-bold text-foreground">
-            Recent <span className="text-primary">Meeting Summaries</span>
-          </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Stay informed with AI-generated summaries from the last 30 days of government meetings. 
-            Search through recent decisions that affect your community.
-          </p>
-        </div>
-
-        {/* Search Bar */}
-        <div className="max-w-2xl mx-auto mb-12">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
-            <Input
-              type="text"
-              placeholder="Search meetings, topics, or decisions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 pr-4 py-6 text-lg rounded-xl border-border/50 focus:border-primary"
-              disabled={isLoading}
-            />
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b border-border/50 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center gap-4 mb-6">
+            <Link to="/">
+              <Button variant="outline" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Recent
+              </Button>
+            </Link>
+          </div>
+          
+          <div className="text-center space-y-4">
+            <h1 className="text-3xl lg:text-5xl font-bold text-foreground">
+              Meeting <span className="text-primary">Archive</span>
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Browse and search through all historical government meeting summaries. 
+              Use filters to find specific meetings, commissions, or time periods.
+            </p>
           </div>
         </div>
+      </div>
 
+      {/* Filters */}
+      <div className="border-b border-border/50 bg-background">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search meetings..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Commission Filter */}
+            <Select value={selectedCommission} onValueChange={setSelectedCommission}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Commissions" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Commissions</SelectItem>
+                {commissions.map((commission) => (
+                  <SelectItem key={commission} value={commission}>
+                    {commission}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Date Range Filter */}
+            <Select value={dateRange} onValueChange={setDateRange}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Time" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="30-days">Last 30 Days</SelectItem>
+                <SelectItem value="3-months">Last 3 Months</SelectItem>
+                <SelectItem value="6-months">Last 6 Months</SelectItem>
+                <SelectItem value="1-year">Last Year</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Sort By */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date-desc">Newest First</SelectItem>
+                <SelectItem value="date-asc">Oldest First</SelectItem>
+                <SelectItem value="commission">By Commission</SelectItem>
+                <SelectItem value="title">By Title</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Loading State */}
         {isLoading && (
           <div className="flex items-center justify-center py-12">
@@ -175,7 +280,6 @@ const MeetingSummaries = () => {
             <span className="ml-3 text-lg text-muted-foreground">Loading meeting summaries...</span>
           </div>
         )}
-
 
         {/* Error State */}
         {error && (
@@ -194,46 +298,42 @@ const MeetingSummaries = () => {
                   Retry
                 </Button>
               </div>
-              <div className="text-sm text-muted-foreground mt-2">
-                <strong>Connected to Cloudflare API:</strong> 
-                <br />
-                <code>https://consumption-demonstrate-race-camps.trycloudflare.com</code>
-                <br />
-                {statistics?.total_documents && (
-                  <span>Found {statistics.total_documents} documents from {statistics.government_bodies} government bodies</span>
-                )}
-              </div>
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Statistics Display */}
-        {!isLoading && !error && (statistics?.total_documents || statistics?.total_meetings) && (
-          <div className="mb-8 p-6 bg-muted/50 rounded-lg">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div>
-                <div className="text-3xl font-bold text-primary">{filteredMeetings.length}</div>
-                <div className="text-sm text-muted-foreground">Recent Meetings (30 days)</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-primary">{statistics.government_bodies || 0}</div>
-                <div className="text-sm text-muted-foreground">Government Bodies</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-primary">{statistics.ai_enhanced_count || statistics.ai_summaries || 0}</div>
-                <div className="text-sm text-muted-foreground">AI Enhanced</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-primary">{summaries.length}</div>
-                <div className="text-sm text-muted-foreground">Total Archive</div>
-              </div>
+        {/* Results Info */}
+        {!isLoading && !error && (
+          <div className="mb-6 flex items-center justify-between">
+            <div className="text-muted-foreground">
+              Showing {paginatedMeetings.length} of {filteredAndSortedMeetings.length} meetings
+              {filteredAndSortedMeetings.length !== summaries.length && (
+                <span> (filtered from {summaries.length} total)</span>
+              )}
             </div>
+            
+            {/* Clear Filters */}
+            {(searchTerm || selectedCommission !== "all" || dateRange !== "all" || sortBy !== "date-desc") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm("");
+                  setSelectedCommission("all");
+                  setDateRange("all");
+                  setSortBy("date-desc");
+                }}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Clear Filters
+              </Button>
+            )}
           </div>
         )}
 
         {/* Meeting Cards */}
         <div className="space-y-6">
-          {filteredMeetings.map((meeting, index) => {
+          {paginatedMeetings.map((meeting, index) => {
             const meetingId = meeting.id || meeting.date + index;
             const isExpanded = expandedMeetings.has(meetingId);
             
@@ -241,7 +341,7 @@ const MeetingSummaries = () => {
               <Card 
                 key={meetingId} 
                 className="hover:shadow-card transition-all duration-300 border-border/50 animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
+                style={{ animationDelay: `${index * 50}ms` }}
               >
                 <CardHeader>
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -308,7 +408,6 @@ const MeetingSummaries = () => {
                 </CardHeader>
                 
                 <CardContent className="space-y-6">
-                  {/* Summary Preview (first 200 characters) */}
                   <div>
                     <div className="mb-3">
                       <h4 className="font-semibold text-foreground text-lg mb-4">Meeting Summary</h4>
@@ -436,89 +535,39 @@ const MeetingSummaries = () => {
                                   {meeting.ai_analysis.public_impact && (
                                     <div className="mb-4">
                                       <p className="text-xs text-muted-foreground mb-2 font-medium">Public Impact:</p>
-                                      <p className="text-sm">{meeting.ai_analysis.public_impact}</p>
+                                      <div className="p-2 bg-background/50 rounded border border-border/20">
+                                        <p className="text-sm">{meeting.ai_analysis.public_impact}</p>
+                                      </div>
                                     </div>
                                   )}
                                   
-                                  {meeting.ai_analysis.next_steps && (
+                                  {meeting.ai_analysis.next_steps && Array.isArray(meeting.ai_analysis.next_steps) && meeting.ai_analysis.next_steps.length > 0 && (
                                     <div>
                                       <p className="text-xs text-muted-foreground mb-2 font-medium">Next Steps:</p>
-                                      <p className="text-sm">{meeting.ai_analysis.next_steps}</p>
+                                      <div className="space-y-2">
+                                        {meeting.ai_analysis.next_steps.map((step, index) => (
+                                          <div key={index} className="p-2 bg-background/50 rounded border border-border/20">
+                                            <p className="text-sm">{step}</p>
+                                          </div>
+                                        ))}
+                                      </div>
                                     </div>
                                   )}
                                 </div>
                               )}
-                             
-                             {/* Show key topics if available (for non-AI enhanced meetings) */}
-                             {!meeting.ai_insights && meeting.key_topics && meeting.key_topics.length > 0 && (
-                               <div className="mt-4">
-                                 <p className="text-sm font-medium text-muted-foreground mb-2">Key Topics:</p>
-                                 <div className="flex flex-wrap gap-1">
-                                   {meeting.key_topics.map((topic, index) => (
-                                     <Badge key={index} variant="outline" className="text-xs">
-                                       {topic}
-                                     </Badge>
-                                   ))}
-                                 </div>
-                               </div>
-                             )}
-                             
-                             <div className="pt-4 border-t border-border/30">
-                               <CollapsibleTrigger asChild>
-                                 <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                                   <ChevronUp className="h-4 w-4 mr-2" />
-                                   Show Less
-                                 </Button>
-                               </CollapsibleTrigger>
-                             </div>
+                              
+                              <div className="pt-4">
+                                <CollapsibleTrigger asChild>
+                                  <Button variant="outline" size="default" className="border-primary/20 text-primary hover:bg-primary/5">
+                                    <ChevronUp className="h-4 w-4 mr-2" />
+                                    Show Less
+                                  </Button>
+                                </CollapsibleTrigger>
+                              </div>
                            </CollapsibleContent>
                         </div>
                       </Collapsible>
                     </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-wrap gap-2 pt-4 border-t border-border/50">
-                    {meeting.agenda_url && (
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={meeting.agenda_url} target="_blank" rel="noopener noreferrer">
-                          <FileText className="mr-2 h-4 w-4" />
-                          Agenda
-                        </a>
-                      </Button>
-                    )}
-                    {meeting.minutes_url && (
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={meeting.minutes_url} target="_blank" rel="noopener noreferrer">
-                          <FileText className="mr-2 h-4 w-4" />
-                          Minutes
-                        </a>
-                      </Button>
-                    )}
-                    {meeting.video_url && (
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={meeting.video_url} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          Video
-                        </a>
-                      </Button>
-                    )}
-                    {meeting.source_url && (
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={meeting.source_url} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          Source
-                        </a>
-                      </Button>
-                    )}
-                    {meeting.pdf_url && (
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={meeting.pdf_url} target="_blank" rel="noopener noreferrer">
-                          <FileText className="mr-2 h-4 w-4" />
-                          PDF
-                        </a>
-                      </Button>
-                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -526,58 +575,80 @@ const MeetingSummaries = () => {
           })}
         </div>
 
-        {!isLoading && !error && filteredMeetings.length === 0 && summaries.length > 0 && (
-          <div className="text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-xl text-muted-foreground">No meetings found matching your search criteria.</p>
-            <Button 
-              variant="outline" 
-              className="mt-4" 
-              onClick={() => setSearchTerm("")}
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-8">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
             >
-              Clear Search
+              Previous
             </Button>
-          </div>
-        )}
-
-        {!isLoading && !error && summaries.length === 0 && (
-          <div className="text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-xl text-muted-foreground">No meeting summaries available.</p>
-            <p className="text-muted-foreground mt-2">Check your API connection or try again later.</p>
-            <Button 
-              variant="outline" 
-              className="mt-4"
-              onClick={() => refetch()}
-            >
-              <RefreshCcw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
-        )}
-
-        {/* Archive Link */}
-        {!isLoading && !error && (
-          <div className="text-center mt-12 py-8 border-t border-border/50">
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-foreground">
-                Looking for older meetings?
-              </h3>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Browse through our complete archive of government meeting summaries with advanced search and filtering options.
-              </p>
-              <Link to="/archive">
-                <Button variant="outline" size="lg" className="gap-2">
-                  <ArchiveIcon className="h-4 w-4" />
-                  View All Historical Meeting Summaries
-                </Button>
-              </Link>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className="w-10"
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
             </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        )}
+
+        {/* No Results */}
+        {!isLoading && !error && filteredAndSortedMeetings.length === 0 && (
+          <div className="text-center py-12">
+            <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No meetings found</h3>
+            <p className="text-muted-foreground mb-4">
+              Try adjusting your search or filter criteria to find more results.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearchTerm("");
+                setSelectedCommission("all");
+                setDateRange("all");
+                setSortBy("date-desc");
+              }}
+            >
+              Clear All Filters
+            </Button>
           </div>
         )}
       </div>
-    </section>
+    </div>
   );
 };
 
-export default MeetingSummaries;
+export default Archive;
