@@ -4,10 +4,10 @@ import heroImage from "@/assets/civic-hero.jpg";
 import { useCivicSummariesSimple } from "@/hooks/useCivicData";
 
 const Hero = () => {
-  const { summaries } = useCivicSummariesSimple();
+  const { summaries, pagination } = useCivicSummariesSimple();
   
-  // Calculate rounded down count to nearest 100
-  const totalMeetings = summaries.length;
+  // Use total count from pagination, fallback to summaries length
+  const totalMeetings = pagination?.total_count || summaries.length;
   const roundedDownCount = Math.floor(totalMeetings / 100) * 100;
   return (
     <section className="relative py-20 lg:py-32 overflow-hidden">
