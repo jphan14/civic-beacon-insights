@@ -17,14 +17,14 @@ const MeetingSummaries = () => {
   // Use the enhanced hook with backward compatibility
   const { summaries, statistics, loading: isLoading, error, refetch } = useCivicSummariesSimple();
   
-  // Filter summaries to last 30 days
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  // Filter summaries to last 90 days
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
   
   const recentSummaries = summaries.filter(meeting => {
     try {
       const meetingDate = new Date(meeting.date);
-      return meetingDate >= thirtyDaysAgo;
+      return meetingDate >= ninetyDaysAgo;
     } catch (error) {
       console.error('Date parsing error:', error, 'for date:', meeting.date);
       return true; // Include meetings with unparseable dates
@@ -143,7 +143,7 @@ const MeetingSummaries = () => {
             Recent <span className="text-primary">Meeting Summaries</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Stay informed with AI-generated summaries from the last 30 days of government meetings. 
+            Stay informed with AI-generated summaries from the last 90 days of government meetings. 
             Search through recent decisions that affect your community.
           </p>
         </div>
@@ -208,7 +208,7 @@ const MeetingSummaries = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div>
                 <div className="text-3xl font-bold text-primary">{filteredMeetings.length}</div>
-                <div className="text-sm text-muted-foreground">Recent Meetings (30 days)</div>
+                <div className="text-sm text-muted-foreground">Recent Meetings (90 days)</div>
               </div>
               <div>
                 <div className="text-3xl font-bold text-primary">{statistics.government_bodies || 0}</div>
