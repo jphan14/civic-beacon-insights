@@ -261,50 +261,44 @@ const MeetingSummaries = () => {
                         })()})
                       </CardTitle>
                       <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                           <span>{(() => {
-                             try {
-                               const date = new Date(meeting.date);
-                               return isNaN(date.getTime()) ? meeting.date : date.toLocaleDateString('en-US', { 
-                                 weekday: 'long', 
-                                 year: 'numeric', 
-                                 month: 'long', 
-                                 day: 'numeric' 
-                               });
-                             } catch (error) {
-                               console.error('Date parsing error:', error, 'for date:', meeting.date);
-                               return meeting.date;
-                             }
-                           })()}</span>
-                        </div>
-                         <div className="flex items-center gap-2">
-                           <Users className="h-4 w-4" />
-                           <span>{meeting.government_body}</span>
-                         </div>
+                        <span>{(() => {
+                          try {
+                            const date = new Date(meeting.date);
+                            return isNaN(date.getTime()) ? meeting.date : date.toLocaleDateString('en-US', { 
+                              weekday: 'long', 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            });
+                          } catch (error) {
+                            console.error('Date parsing error:', error, 'for date:', meeting.date);
+                            return meeting.date;
+                          }
+                         })()}</span>
+                         <span>{meeting.government_body}</span>
                        </div>
                      </div>
-                      <div className="flex items-center gap-3">
-                         <Badge variant="secondary">{meeting.government_body}</Badge>
-                         <Badge variant="outline">{meeting.document_type}</Badge>
-                         {meeting.ai_enhanced && (
-                          <Badge variant="default" className="bg-primary text-primary-foreground flex items-center gap-1">
-                            <Bot className="h-3 w-3" />
-                            AI Enhanced
-                          </Badge>
-                        )}
-                        {meeting.template_enhanced && !meeting.ai_enhanced && (
-                          <Badge variant="outline">
-                            Template Enhanced
-                          </Badge>
-                        )}
-                        {meeting.ai_generated && !meeting.ai_enhanced && (
-                          <Badge variant="default" className="bg-accent text-accent-foreground">
-                            AI Generated
-                          </Badge>
-                        )}
-                      </div>
-                  </div>
+                     <div className="flex items-center gap-3">
+                        <Badge variant="secondary">{meeting.government_body}</Badge>
+                        <Badge variant="outline">{meeting.document_type}</Badge>
+                        {meeting.ai_enhanced && (
+                         <Badge variant="default" className="bg-primary text-primary-foreground flex items-center gap-1">
+                           <Bot className="h-3 w-3" />
+                           AI Enhanced
+                         </Badge>
+                       )}
+                       {meeting.template_enhanced && !meeting.ai_enhanced && (
+                         <Badge variant="outline">
+                           Template Enhanced
+                         </Badge>
+                       )}
+                       {meeting.ai_generated && !meeting.ai_enhanced && (
+                         <Badge variant="default" className="bg-accent text-accent-foreground">
+                           AI Generated
+                         </Badge>
+                       )}
+                     </div>
+                   </div>
                   
                   {/* View Original Document Link */}
                   {meeting.url && (
