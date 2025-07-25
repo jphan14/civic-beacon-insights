@@ -8,7 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Clock, Users, Search, ExternalLink, AlertCircle, Loader2, RefreshCcw, FileText, ChevronDown, ChevronUp, Bot, Sparkles, Filter, ArrowLeft, CalendarIcon } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useCivicSummariesSimple } from "@/hooks/useCivicData";
+import { useCivicSummaries } from "@/hooks/useCivicData";
 import type { CivicSummary } from "@/services/civicApi";
 
 const Archive = () => {
@@ -18,77 +18,83 @@ const Archive = () => {
   const [sortBy, setSortBy] = useState<string>("date-desc");
   const [expandedMeetings, setExpandedMeetings] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 20; // Match API default
   
-  // Use the enhanced hook
-  const { summaries, statistics, loading: isLoading, error, refetch } = useCivicSummariesSimple();
+  // Use the enhanced hook with proper pagination and filtering
+  const { summaries, statistics, pagination, loading: isLoading, error, refetch } = useCivicSummaries({
+    page: currentPage,
+    limit: itemsPerPage,
+    // Pass commission filter to API if not "all"
+    commission: selectedCommission !== "all" ? [selectedCommission] : undefined,
+  });
   
-  // Get unique commissions for filter
+  // Filter summaries by search term (client-side for now)
+  const searchFilteredMeetings = summaries.filter(meeting => {
+    if (!searchTerm) return true;
+    return meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           meeting.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           meeting.government_body.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           meeting.commission?.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+  
+  // Apply client-side date filtering (since API doesn't support it yet)
+  const dateFilteredMeetings = searchFilteredMeetings.filter(meeting => {
+    if (dateRange === "all") return true;
+    
+    try {
+      const meetingDate = new Date(meeting.date);
+      const now = new Date();
+      
+      switch (dateRange) {
+        case "30-days":
+          return (now.getTime() - meetingDate.getTime()) <= (30 * 24 * 60 * 60 * 1000);
+        case "3-months":
+          return (now.getTime() - meetingDate.getTime()) <= (90 * 24 * 60 * 60 * 1000);
+        case "6-months":
+          return (now.getTime() - meetingDate.getTime()) <= (180 * 24 * 60 * 60 * 1000);
+        case "1-year":
+          return (now.getTime() - meetingDate.getTime()) <= (365 * 24 * 60 * 60 * 1000);
+        default:
+          return true;
+      }
+    } catch (error) {
+      return true;
+    }
+  });
+  
+  // Sort the filtered meetings
+  const sortedMeetings = dateFilteredMeetings.sort((a, b) => {
+    switch (sortBy) {
+      case "date-desc":
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      case "date-asc":
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      case "commission":
+        return (a.commission || "").localeCompare(b.commission || "");
+      case "title":
+        return a.title.localeCompare(b.title);
+      default:
+        return 0;
+    }
+  });
+  
+  // Use API pagination info when available
+  const totalCount = pagination?.total_count || summaries.length;
+  const totalPages = pagination?.total_pages || Math.ceil(sortedMeetings.length / itemsPerPage);
+  const paginatedMeetings = pagination ? summaries : sortedMeetings; // Use API results if paginated, otherwise use sorted
+  
+  // Get unique commissions for filter (from all available data)
   const commissions = Array.from(new Set(summaries.map(meeting => meeting.commission).filter(Boolean)));
   
-  // Filter and sort summaries
-  const filteredAndSortedMeetings = summaries
-    .filter(meeting => {
-      // Search filter
-      const matchesSearch = searchTerm === "" || 
-        meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        meeting.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        meeting.government_body.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        meeting.commission?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // Commission filter
-      const matchesCommission = selectedCommission === "all" || meeting.commission === selectedCommission;
-      
-      // Date range filter
-      let matchesDate = true;
-      if (dateRange !== "all") {
-        const meetingDate = new Date(meeting.date);
-        const now = new Date();
-        
-        switch (dateRange) {
-          case "30-days":
-            matchesDate = (now.getTime() - meetingDate.getTime()) <= (30 * 24 * 60 * 60 * 1000);
-            break;
-          case "3-months":
-            matchesDate = (now.getTime() - meetingDate.getTime()) <= (90 * 24 * 60 * 60 * 1000);
-            break;
-          case "6-months":
-            matchesDate = (now.getTime() - meetingDate.getTime()) <= (180 * 24 * 60 * 60 * 1000);
-            break;
-          case "1-year":
-            matchesDate = (now.getTime() - meetingDate.getTime()) <= (365 * 24 * 60 * 60 * 1000);
-            break;
-        }
-      }
-      
-      return matchesSearch && matchesCommission && matchesDate;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "date-desc":
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
-        case "date-asc":
-          return new Date(a.date).getTime() - new Date(b.date).getTime();
-        case "commission":
-          return (a.commission || "").localeCompare(b.commission || "");
-        case "title":
-          return a.title.localeCompare(b.title);
-        default:
-          return 0;
-      }
-    });
-  
-  // Pagination
-  const totalPages = Math.ceil(filteredAndSortedMeetings.length / itemsPerPage);
-  const paginatedMeetings = filteredAndSortedMeetings.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-  
-  // Reset page when filters change
+  // Reset page when commission filter changes (triggers new API call)
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedCommission, dateRange, sortBy]);
+  }, [selectedCommission]);
+  
+  // Handle search, date range and sort changes (client-side, so reset page)
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, dateRange, sortBy]);
   
   // Toggle expanded state for a meeting
   const toggleMeetingExpanded = (meetingId: string) => {
@@ -306,9 +312,12 @@ const Archive = () => {
         {!isLoading && !error && (
           <div className="mb-6 flex items-center justify-between">
             <div className="text-muted-foreground">
-              Showing {paginatedMeetings.length} of {filteredAndSortedMeetings.length} meetings
-              {filteredAndSortedMeetings.length !== summaries.length && (
-                <span> (filtered from {summaries.length} total)</span>
+              Showing {paginatedMeetings.length} of {totalCount} meetings
+              <span className="text-sm ml-2">(Page {currentPage} of {totalPages})</span>
+              {pagination && (
+                <span className="text-xs block sm:inline sm:ml-2 text-muted-foreground/80">
+                  Server-side pagination active
+                </span>
               )}
             </div>
             
@@ -582,12 +591,13 @@ const Archive = () => {
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
+              disabled={currentPage === 1 || isLoading}
             >
               Previous
             </Button>
             
             <div className="flex items-center gap-1">
+              {/* Show page numbers around current page */}
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let pageNum;
                 if (totalPages <= 5) {
@@ -607,6 +617,7 @@ const Archive = () => {
                     size="sm"
                     onClick={() => setCurrentPage(pageNum)}
                     className="w-10"
+                    disabled={isLoading}
                   >
                     {pageNum}
                   </Button>
@@ -618,7 +629,7 @@ const Archive = () => {
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === totalPages || isLoading}
             >
               Next
             </Button>
@@ -626,7 +637,7 @@ const Archive = () => {
         )}
 
         {/* No Results */}
-        {!isLoading && !error && filteredAndSortedMeetings.length === 0 && (
+        {!isLoading && !error && paginatedMeetings.length === 0 && (
           <div className="text-center py-12">
             <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">No meetings found</h3>
