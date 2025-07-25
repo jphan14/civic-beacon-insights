@@ -350,20 +350,33 @@ const Archive = () => {
                 <CardHeader>
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div className="space-y-2">
-                      <CardTitle className="text-2xl text-foreground">
-                        {meeting.commission} - {meeting.title} ({(() => {
-                          try {
-                            const date = new Date(meeting.date);
-                            return isNaN(date.getTime()) ? meeting.date : date.toLocaleDateString('en-US', { 
-                              year: 'numeric', 
-                              month: 'short', 
-                              day: 'numeric' 
-                            });
-                          } catch (error) {
-                            return meeting.date;
-                          }
-                        })()})
-                      </CardTitle>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <CardTitle className="text-2xl text-foreground">
+                          {meeting.commission} - {meeting.title} ({(() => {
+                            try {
+                              const date = new Date(meeting.date);
+                              return isNaN(date.getTime()) ? meeting.date : date.toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              });
+                            } catch (error) {
+                              return meeting.date;
+                            }
+                          })()})
+                        </CardTitle>
+                        {meeting.url && (
+                          <a
+                            href={meeting.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-1 text-sm text-primary hover:text-primary/80 transition-colors"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            View Original
+                          </a>
+                        )}
+                      </div>
                       <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
                         <span>{(() => {
                           try {
@@ -403,21 +416,6 @@ const Archive = () => {
                        )}
                      </div>
                    </div>
-                  
-                  {/* View Original Document Link */}
-                  {meeting.url && (
-                    <div className="flex-shrink-0">
-                      <a
-                        href={meeting.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 text-sm text-primary hover:text-primary/80 transition-colors"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        View Original
-                      </a>
-                    </div>
-                  )}
                 </CardHeader>
                 
                 <CardContent className="space-y-6">
