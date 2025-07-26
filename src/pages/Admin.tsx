@@ -97,6 +97,31 @@ const Admin = () => {
     }
   };
 
+  const debugApiCount = async () => {
+    setIsProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("debug-api-count");
+      
+      if (error) throw error;
+      
+      console.log('API Debug Results:', data);
+      toast({
+        title: "Debug Complete",
+        description: `Found ${data.totalMeetingsFound} total meetings. Check console for details.`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Error debugging API:', error);
+      toast({
+        title: "Error",
+        description: "Failed to debug API",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <>
       <Navigation />
@@ -181,6 +206,24 @@ const Admin = () => {
                         <>
                           <Database className="h-4 w-4 mr-2" />
                           Process All
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      onClick={debugApiCount}
+                      disabled={isProcessing}
+                      variant="secondary"
+                      className="min-w-[140px]"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Debugging...
+                        </>
+                      ) : (
+                        <>
+                          <Database className="h-4 w-4 mr-2" />
+                          Debug API Count
                         </>
                       )}
                     </Button>
