@@ -72,7 +72,7 @@ const Admin = () => {
       const { data, error } = await supabase.functions.invoke("batch-process-meetings", {
         body: {
           startPage: 1,
-          batchSize: 1000 // Large batch size to process all
+          batchSize: 2000 // Increased to handle all historical meetings
         }
       });
 
