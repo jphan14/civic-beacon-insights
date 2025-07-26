@@ -35,21 +35,22 @@ serve(async (req) => {
     
     console.log(`Query is temporal: ${isTemporalQuery}, Current year: ${currentYear}`);
 
-    // First, try simple text search as it's more reliable
+    // Start with text-based search
     console.log('Starting with text-based search...');
     
     let textQuery = supabase
       .from('document_embeddings')
-      .select('meeting_id, content, content_type, metadata, created_at')
-      .or(`content.ilike.%${query}%,metadata->>title.ilike.%${query}%`);
+      .select('meeting_id, content, content_type, metadata, created_at');
+    
+    // Apply search filters
+    textQuery = textQuery.or(`content.ilike.%${query}%,metadata->>title.ilike.%${query}%`);
     
     // If it's a temporal query, prioritize recent documents (2024-2025)
     if (isTemporalQuery) {
       console.log('Filtering for recent documents (2024-2025)');
       textQuery = textQuery
         .gte('metadata->>date', '2024-01-01')
-        .order('metadata->>date', { ascending: false, nullsFirst: false })
-        .order('created_at', { ascending: false });
+        .order('metadata->>date', { ascending: false, nullsFirst: false });
     } else {
       textQuery = textQuery.order('created_at', { ascending: false });
     }
@@ -121,12 +122,21 @@ serve(async (req) => {
     if (matchingKeyword) {
       console.log(`Trying broader search with keyword: ${matchingKeyword}`);
       
-      const { data: broadResults, error: broadError } = await supabase
+      let broadQuery = supabase
         .from('document_embeddings')
         .select('meeting_id, content, content_type, metadata, created_at')
-        .ilike('content', `%${matchingKeyword}%`)
-        .order('created_at', { ascending: false })
-        .limit(limit);
+        .ilike('content', `%${matchingKeyword}%`);
+      
+      // Apply temporal filter for broader search too
+      if (isTemporalQuery) {
+        broadQuery = broadQuery
+          .gte('metadata->>date', '2024-01-01')
+          .order('metadata->>date', { ascending: false, nullsFirst: false });
+      } else {
+        broadQuery = broadQuery.order('created_at', { ascending: false });
+      }
+      
+      const { data: broadResults, error: broadError } = await broadQuery.limit(limit);
       
       if (!broadError && broadResults && broadResults.length > 0) {
         const results = broadResults.map(item => ({
@@ -153,11 +163,20 @@ serve(async (req) => {
     // If still no results, return recent meetings
     console.log('No specific matches found, returning recent meetings...');
     
-    const { data: recentResults, error: recentError } = await supabase
+    let recentQuery = supabase
       .from('document_embeddings')
-      .select('meeting_id, content, content_type, metadata, created_at')
-      .order('created_at', { ascending: false })
-      .limit(Math.min(limit, 5));
+      .select('meeting_id, content, content_type, metadata, created_at');
+    
+    // For temporal queries, prioritize 2024-2025 data
+    if (isTemporalQuery) {
+      recentQuery = recentQuery
+        .gte('metadata->>date', '2024-01-01')
+        .order('metadata->>date', { ascending: false, nullsFirst: false });
+    } else {
+      recentQuery = recentQuery.order('created_at', { ascending: false });
+    }
+    
+    const { data: recentResults, error: recentError } = await recentQuery.limit(Math.min(limit, 5));
     
     if (recentError) {
       console.error('Recent search error:', recentError);
