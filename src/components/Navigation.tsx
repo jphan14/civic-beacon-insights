@@ -15,11 +15,29 @@ const Navigation = () => {
   ];
 
   const NavLink = ({ item }: { item: typeof navItems[0] }) => {
-    const isActive = location.pathname === item.href;
+    const isActive = location.pathname === item.href.replace('#', '/');
+    
+    // Handle anchor links differently
+    if (item.href.startsWith('#')) {
+      return (
+        <a
+          href={item.href}
+          className={`flex items-center gap-2 transition-colors duration-200 font-medium ${
+            location.hash === item.href 
+              ? 'text-primary' 
+              : 'text-foreground hover:text-primary'
+          }`}
+          onClick={() => setIsOpen(false)}
+        >
+          <item.icon className="h-4 w-4" />
+          {item.label}
+        </a>
+      );
+    }
     
     return (
       <Link
-        to={item.href.startsWith('#') ? '/' + item.href : item.href}
+        to={item.href}
         className={`flex items-center gap-2 transition-colors duration-200 font-medium ${
           isActive 
             ? 'text-primary' 
