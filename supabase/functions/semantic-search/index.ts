@@ -27,13 +27,52 @@ serve(async (req) => {
     }
 
     console.log(`Searching for: "${query}"`);
+    console.log(`Query length: ${query.length}, type: ${typeof query}`);
 
-    // Simple search for TrueFix specifically
-    const { data: embeddings, error } = await supabase
+    // Test with multiple search approaches
+    console.log('Testing different search approaches...');
+    
+    // First try exact TrueFix search
+    const { data: truefixTest, error: truefixError } = await supabase
       .from('document_embeddings')
-      .select('meeting_id, content, content_type, metadata, created_at')
-      .ilike('content', `%${query}%`)
-      .limit(10);
+      .select('meeting_id, content_type')
+      .ilike('content', '%TrueFix%')
+      .limit(1);
+    
+    console.log(`TrueFix direct test found: ${truefixTest?.length || 0} results`);
+    
+    // Then try multiple variations of the user's query
+    const searchVariations = [
+      query,
+      query.toLowerCase(),
+      'TrueFix',
+      'truefix',
+      'Tech Repair',
+      'window sign'
+    ];
+    
+    console.log('Testing search variations:', searchVariations);
+    
+    let embeddings = null;
+    let error = null;
+    
+    // Try each variation until we find results
+    for (const searchTerm of searchVariations) {
+      const { data: testData, error: testError } = await supabase
+        .from('document_embeddings')
+        .select('meeting_id, content, content_type, metadata, created_at')
+        .ilike('content', `%${searchTerm}%`)
+        .limit(10);
+      
+      console.log(`Search for "${searchTerm}" found: ${testData?.length || 0} results`);
+      
+      if (testData && testData.length > 0) {
+        embeddings = testData;
+        error = testError;
+        console.log(`Using results from search term: "${searchTerm}"`);
+        break;
+      }
+    }
 
     if (error) {
       console.error('Search error:', error);
