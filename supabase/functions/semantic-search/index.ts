@@ -78,12 +78,18 @@ serve(async (req) => {
     console.log('Using text-based semantic search as fallback');
     
     const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
-    const searchPattern = searchTerms.join(' & ');
+    
+    // Build a more comprehensive search query
+    const exactPhrase = `content.ilike.%${query}%`;
+    const titleSearch = `metadata->>title.ilike.%${query}%`;
+    
+    // Also search for individual terms for partial matches
+    const individualTerms = searchTerms.map(term => `content.ilike.%${term}%`).join(',');
     
     let searchQuery = supabase
       .from('document_embeddings')
       .select('meeting_id, content, content_type, metadata, created_at')
-      .or(`content.ilike.*${query}*,metadata->>title.ilike.*${query}*`)
+      .or(`${exactPhrase},${titleSearch},${individualTerms}`)
       .limit(50);
 
     // Add content type filter if specified
