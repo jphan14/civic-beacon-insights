@@ -201,6 +201,33 @@ Please answer the user's question based solely on the information provided above
     // Save the conversation to the database if session_id is provided
     if (session_id) {
       try {
+        // First, ensure the session exists
+        const { data: existingSession, error: sessionCheckError } = await supabase
+          .from('chat_sessions')
+          .select('id')
+          .eq('id', session_id)
+          .single();
+
+        if (sessionCheckError && sessionCheckError.code === 'PGRST116') {
+          // Session doesn't exist, create it
+          console.log('Creating new chat session:', session_id);
+          const { error: sessionCreateError } = await supabase
+            .from('chat_sessions')
+            .insert({
+              id: session_id,
+              title: message.substring(0, 100), // Use first part of message as title
+              updated_at: new Date().toISOString()
+            });
+
+          if (sessionCreateError) {
+            console.error('Failed to create session:', sessionCreateError);
+            throw sessionCreateError;
+          }
+        } else if (sessionCheckError) {
+          console.error('Error checking session:', sessionCheckError);
+          throw sessionCheckError;
+        }
+
         // Save user message
         await supabase
           .from('chat_messages')
@@ -231,19 +258,21 @@ Please answer the user's question based solely on the information provided above
       }
     }
 
-    // Track the query for analytics
+    // Track the query for analytics (only if session exists)
     const relevantMeetings = contextResults.map(r => r.meeting_id);
-    try {
-      await supabase
-        .from('user_queries')
-        .insert({
-          query: message,
-          session_id,
-          relevant_meetings: relevantMeetings,
-          response_time_ms: Date.now() - Date.now(), // Placeholder
-        });
-    } catch (analyticsError) {
-      console.warn('Failed to track query analytics:', analyticsError);
+    if (session_id) {
+      try {
+        await supabase
+          .from('user_queries')
+          .insert({
+            query: message,
+            session_id,
+            relevant_meetings: relevantMeetings,
+            response_time_ms: Date.now() - Date.now(), // Placeholder
+          });
+      } catch (analyticsError) {
+        console.warn('Failed to track query analytics:', analyticsError);
+      }
     }
 
     return new Response(
