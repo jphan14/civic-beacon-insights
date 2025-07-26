@@ -497,15 +497,17 @@ const MeetingSummaries = () => {
               <h3 className="text-xl font-semibold text-foreground">
                 Looking for older meetings?
               </h3>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
-                Browse through our complete archive of government meeting summaries with advanced search and filtering options.
+              <p className="text-muted-foreground mx-auto">
+                Browse our complete archive with advanced search and filtering.
               </p>
-              <Link to="/archive">
-                <Button variant="outline" size="lg" className="gap-2">
-                  <ArchiveIcon className="h-4 w-4" />
-                  View All Historical Meeting Summaries
-                </Button>
-              </Link>
+              <div className="pt-6">
+                <Link to="/archive">
+                  <Button size="lg" className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+                    <ArchiveIcon className="h-4 w-4" />
+                    View All Historical Meeting Summaries
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         )}
