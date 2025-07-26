@@ -31,42 +31,56 @@ const About = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Content */}
-          <div className="space-y-8">
-            <div className="space-y-4">
+            <div className="space-y-8">
               <h2 className="text-3xl lg:text-5xl font-bold text-foreground">
-                About the <span className="text-primary">LCF Civic Portal</span>
+                About <span className="text-primary">Civic Beacon</span>
               </h2>
-              <p className="text-xl text-muted-foreground leading-relaxed">
-                The La Cañada Flintridge Civic Portal is a government transparency initiative that uses 
-                artificial intelligence to make local government more accessible to residents.
-              </p>
-            </div>
+              
+              <div className="prose prose-lg text-muted-foreground space-y-6">
+                <p>
+                  The La Cañada Flintridge Civic Beacon is a local government transparency initiative — 
+                  and a personal side project — created by a resident who wanted to stay more informed 
+                  and help others do the same.
+                </p>
+                
+                <p>
+                  Local government shapes so much of our daily lives — from the roads we drive on 
+                  to the parks where our children play. But staying on top of what's happening can 
+                  be difficult. Meeting recordings are long, documents are dense, and most of us 
+                  are juggling busy schedules.
+                </p>
+                
+                <p>
+                  Civic Beacon Insights uses artificial intelligence to bridge this gap. The platform 
+                  automatically processes city council meetings, planning commission sessions, and 
+                  committee hearings to generate clear, searchable summaries. The goal is simple: 
+                  to make it easier for residents to understand the decisions being made in our community.
+                </p>
+                
+                <p>
+                  I believe technology can be a force for good in civic life — especially AI, which 
+                  can both distill key points from public documents and serve as an assistant to 
+                  help answer your questions.
+                </p>
+                
+                <p>
+                  This is an experiment — and a work in progress. If you have feedback, ideas, or 
+                  thoughts on how to make it better, I'd love to hear from you. Send me a note.
+                </p>
+              </div>
 
-            <div className="prose prose-lg text-muted-foreground space-y-4">
-              <p>
-                Local government affects every aspect of our daily lives—from the roads we drive on 
-                to the parks where our children play. Yet staying informed about government decisions 
-                can be challenging due to lengthy meeting recordings, complex documents, and busy schedules.
-              </p>
-              <p>
-                Our platform bridges this gap by automatically processing city council meetings, 
-                planning commission sessions, and committee hearings to create clear, searchable summaries. 
-                This technology makes it easier for residents to understand what's happening in their local government.
-              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button size="lg" className="bg-primary hover:bg-primary/90">
+                  <Heart className="mr-2 h-5 w-5" />
+                  Support This Project
+                </Button>
+                <Button variant="outline" size="lg">
+                  <Code className="mr-2 h-5 w-5" />
+                  View on GitHub
+                  <ExternalLink className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
             </div>
-
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-primary hover:bg-primary/90">
-                <Heart className="mr-2 h-5 w-5" />
-                Support This Project
-              </Button>
-              <Button variant="outline" size="lg">
-                <Code className="mr-2 h-5 w-5" />
-                View on GitHub
-                <ExternalLink className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
 
           {/* Values Grid */}
           <div className="grid sm:grid-cols-2 gap-6">
