@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Loader2, ExternalLink } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Send, Bot, User, Loader2, ExternalLink, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
@@ -116,6 +117,13 @@ const Chat = () => {
             Ask questions about La Canada Flintridge city meetings, decisions, and public records.
           </p>
         </div>
+
+        <Alert className="mb-6 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
+          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <AlertDescription className="text-amber-800 dark:text-amber-200">
+            This AI assistant is still under construction and may be buggy. Results may not always be accurate or complete.
+          </AlertDescription>
+        </Alert>
 
         <Card className="flex-1 flex flex-col min-h-0">
           <CardHeader className="pb-4">
