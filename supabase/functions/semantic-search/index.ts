@@ -45,10 +45,19 @@ serve(async (req) => {
     const searchVariations = [
       query,
       query.toLowerCase(),
-      'TrueFix',
-      'truefix',
-      'Tech Repair',
-      'window sign'
+      // Add budget-related terms
+      'budget',
+      'fiscal year',
+      'appropriations',
+      'warrant resolution',
+      'financial',
+      'spending',
+      // Add common meeting terms
+      'city council',
+      'commission',
+      'resolution',
+      'motion',
+      'ordinance'
     ];
     
     console.log('Testing search variations:', searchVariations);
