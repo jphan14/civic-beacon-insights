@@ -1,17 +1,17 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Calendar, Clock, Users, Search, ExternalLink, AlertCircle, Loader2, RefreshCcw, FileText, ChevronDown, ChevronUp, Bot, Sparkles, Archive as ArchiveIcon } from "lucide-react";
+import { Calendar, Clock, Users, ExternalLink, AlertCircle, Loader2, RefreshCcw, FileText, ChevronDown, ChevronUp, Bot, Sparkles, Archive as ArchiveIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCivicSummariesSimple } from "@/hooks/useCivicData";
 import type { CivicSummary } from "@/services/civicApi";
 
 const MeetingSummaries = () => {
-  const [searchTerm, setSearchTerm] = useState("");
+  
   const [expandedMeetings, setExpandedMeetings] = useState<Set<string>>(new Set());
   
   // Use the enhanced hook with backward compatibility
@@ -31,12 +31,7 @@ const MeetingSummaries = () => {
     }
   });
   
-  // Filter summaries based on search term
-  const filteredMeetings = recentSummaries.filter(meeting =>
-    meeting.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    meeting.summary.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    meeting.government_body.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMeetings = recentSummaries;
 
   // Toggle expanded state for a meeting
   const toggleMeetingExpanded = (meetingId: string) => {
@@ -143,25 +138,10 @@ const MeetingSummaries = () => {
             Recent <span className="text-primary">Meeting Summaries</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Stay informed with AI-generated summaries from government meetings. 
-            Search through recent decisions that affect your community.
+            Stay informed with AI-generated summaries from government meetings.
           </p>
         </div>
 
-        {/* Search Bar */}
-        <div className="max-w-2xl mx-auto mb-12">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
-            <Input
-              type="text"
-              placeholder="Search meetings, topics, or decisions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 pr-4 py-6 text-lg rounded-xl border-border/50 focus:border-primary"
-              disabled={isLoading}
-            />
-          </div>
-        </div>
 
         {/* Loading State */}
         {isLoading && (
@@ -490,14 +470,7 @@ const MeetingSummaries = () => {
         {!isLoading && !error && filteredMeetings.length === 0 && summaries.length > 0 && (
           <div className="text-center py-12">
             <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-xl text-muted-foreground">No meetings found matching your search criteria.</p>
-            <Button 
-              variant="outline" 
-              className="mt-4" 
-              onClick={() => setSearchTerm("")}
-            >
-              Clear Search
-            </Button>
+            <p className="text-xl text-muted-foreground">No recent meetings found.</p>
           </div>
         )}
 
