@@ -63,6 +63,39 @@ const Admin = () => {
     }
   };
 
+  const processAll = async () => {
+    setIsProcessing(true);
+    setProcessResult(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("batch-process-meetings", {
+        body: {
+          startPage: 1,
+          batchSize: 1000 // Large batch size to process all
+        }
+      });
+
+      if (error) throw error;
+
+      setProcessResult(data);
+      await checkEmbeddingCount();
+      
+      toast({
+        title: "Success!",
+        description: `Processed ${data.processedCount} meetings successfully`,
+      });
+    } catch (error) {
+      console.error('Processing error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process meetings. Check console for details.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -112,23 +145,43 @@ const Admin = () => {
                       Create embeddings from meeting content for AI search
                     </p>
                   </div>
-                  <Button 
-                    onClick={startProcessing}
-                    disabled={isProcessing}
-                    className="min-w-[140px]"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-4 w-4 mr-2" />
-                        Start Processing
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={startProcessing}
+                      disabled={isProcessing}
+                      className="min-w-[140px]"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-4 w-4 mr-2" />
+                          Process Batch (10)
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      onClick={processAll}
+                      disabled={isProcessing}
+                      variant="outline"
+                      className="min-w-[140px]"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Database className="h-4 w-4 mr-2" />
+                          Process All
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
                 {processResult && (
