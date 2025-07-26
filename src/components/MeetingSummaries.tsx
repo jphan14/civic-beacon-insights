@@ -143,7 +143,7 @@ const MeetingSummaries = () => {
             Recent <span className="text-primary">Meeting Summaries</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Stay informed with AI-generated summaries from the last 90 days of government meetings. 
+            Stay informed with AI-generated summaries from government meetings. 
             Search through recent decisions that affect your community.
           </p>
         </div>
