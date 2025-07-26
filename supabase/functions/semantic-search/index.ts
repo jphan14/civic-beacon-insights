@@ -28,12 +28,16 @@ serve(async (req) => {
 
     console.log(`Searching for: "${query}"`);
 
-    // Check if query contains temporal terms that suggest recent documents
+    // Check if query contains temporal terms or specific years
     const currentYear = new Date().getFullYear();
     const temporalTerms = ['this year', 'latest', 'recent', 'current', 'new', currentYear.toString()];
     const isTemporalQuery = temporalTerms.some(term => query.toLowerCase().includes(term));
     
-    console.log(`Query is temporal: ${isTemporalQuery}, Current year: ${currentYear}`);
+    // Check for specific years (2020-2025)
+    const yearMatch = query.match(/\b(202[0-5])\b/);
+    const specificYear = yearMatch ? yearMatch[1] : null;
+    
+    console.log(`Query is temporal: ${isTemporalQuery}, Current year: ${currentYear}, Specific year: ${specificYear}`);
 
     // Start with text-based search
     console.log('Starting with text-based search...');
@@ -45,8 +49,14 @@ serve(async (req) => {
     // Apply search filters
     textQuery = textQuery.or(`content.ilike.%${query}%,metadata->>title.ilike.%${query}%`);
     
-    // If it's a temporal query, prioritize recent documents (2024-2025)
-    if (isTemporalQuery) {
+    // Apply temporal filtering
+    if (specificYear) {
+      console.log(`Filtering for specific year: ${specificYear}`);
+      textQuery = textQuery
+        .gte('metadata->>date', `${specificYear}-01-01`)
+        .lt('metadata->>date', `${parseInt(specificYear) + 1}-01-01`)
+        .order('metadata->>date', { ascending: false, nullsFirst: false });
+    } else if (isTemporalQuery) {
       console.log('Filtering for recent documents (2024-2025)');
       textQuery = textQuery
         .gte('metadata->>date', '2024-01-01')
@@ -128,7 +138,12 @@ serve(async (req) => {
         .ilike('content', `%${matchingKeyword}%`);
       
       // Apply temporal filter for broader search too
-      if (isTemporalQuery) {
+      if (specificYear) {
+        broadQuery = broadQuery
+          .gte('metadata->>date', `${specificYear}-01-01`)
+          .lt('metadata->>date', `${parseInt(specificYear) + 1}-01-01`)
+          .order('metadata->>date', { ascending: false, nullsFirst: false });
+      } else if (isTemporalQuery) {
         broadQuery = broadQuery
           .gte('metadata->>date', '2024-01-01')
           .order('metadata->>date', { ascending: false, nullsFirst: false });
@@ -167,8 +182,13 @@ serve(async (req) => {
       .from('document_embeddings')
       .select('meeting_id, content, content_type, metadata, created_at');
     
-    // For temporal queries, prioritize 2024-2025 data
-    if (isTemporalQuery) {
+    // Apply temporal filtering for fallback
+    if (specificYear) {
+      recentQuery = recentQuery
+        .gte('metadata->>date', `${specificYear}-01-01`)
+        .lt('metadata->>date', `${parseInt(specificYear) + 1}-01-01`)
+        .order('metadata->>date', { ascending: false, nullsFirst: false });
+    } else if (isTemporalQuery) {
       recentQuery = recentQuery
         .gte('metadata->>date', '2024-01-01')
         .order('metadata->>date', { ascending: false, nullsFirst: false });
