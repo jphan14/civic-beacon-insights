@@ -74,6 +74,43 @@ serve(async (req) => {
       } else {
         console.warn('Search request failed, proceeding without context');
       }
+
+      // If semantic search didn't return enough results, try direct civic API search
+      if (contextResults.length < 2) {
+        console.log('Semantic search returned few results, trying direct civic API search...');
+        
+        try {
+          // Search civic API for relevant meetings
+          const civicApiResponse = await fetch('https://stocks-salon-chen-plaintiff.trycloudflare.com/api/search?' + new URLSearchParams({
+            q: message,
+            limit: '10',
+          }));
+          
+          if (civicApiResponse.ok) {
+            const civicData = await civicApiResponse.json();
+            const civicResults = civicData.results || [];
+            
+            // Convert civic API results to context format
+            const additionalContext = civicResults.slice(0, max_context_results).map((meeting: any) => ({
+              meeting_id: meeting.id,
+              content: `Title: ${meeting.title}\nDate: ${meeting.date}\nCommission: ${meeting.commission || meeting.government_body}\nSummary: ${meeting.summary}${meeting.ai_analysis ? `\nKey Decisions: ${JSON.stringify(meeting.ai_analysis.key_decisions || [])}` : ''}`,
+              content_type: 'meeting_summary',
+              similarity_score: 0.8,
+              metadata: {
+                title: meeting.title,
+                date: meeting.date,
+                commission: meeting.commission,
+                url: meeting.url
+              }
+            }));
+            
+            contextResults = [...contextResults, ...additionalContext];
+            console.log(`Added ${additionalContext.length} results from civic API search`);
+          }
+        } catch (civicError) {
+          console.warn('Civic API search failed:', civicError);
+        }
+      }
     }
 
     // Build the context string from search results
