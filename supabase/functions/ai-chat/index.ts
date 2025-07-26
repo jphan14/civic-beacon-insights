@@ -75,41 +75,51 @@ serve(async (req) => {
         console.warn('Search request failed, proceeding without context');
       }
 
-      // If semantic search didn't return enough results, try direct civic API search
-      if (contextResults.length < 2) {
-        console.log('Semantic search returned few results, trying direct civic API search...');
+      // Always try civic API search for additional context, especially for budget/meeting queries
+      console.log('Searching civic API for additional context...');
+      
+      try {
+        // Search civic API for relevant meetings
+        const civicApiResponse = await fetch('https://stocks-salon-chen-plaintiff.trycloudflare.com/api/search?' + new URLSearchParams({
+          q: message,
+          limit: '10',
+        }));
         
-        try {
-          // Search civic API for relevant meetings
-          const civicApiResponse = await fetch('https://stocks-salon-chen-plaintiff.trycloudflare.com/api/search?' + new URLSearchParams({
-            q: message,
-            limit: '10',
+        if (civicApiResponse.ok) {
+          const civicData = await civicApiResponse.json();
+          const civicResults = civicData.results || [];
+          console.log(`Civic API search found ${civicResults.length} results`);
+          
+          // Convert civic API results to context format
+          const additionalContext = civicResults.slice(0, 5).map((meeting: any) => ({
+            meeting_id: meeting.id,
+            content: `Meeting: ${meeting.title}
+Date: ${meeting.date}
+Commission: ${meeting.commission || meeting.government_body}
+Document Type: ${meeting.document_type}
+Summary: ${meeting.summary}
+${meeting.ai_analysis?.key_decisions ? `Key Decisions: ${JSON.stringify(meeting.ai_analysis.key_decisions)}` : ''}
+${meeting.ai_analysis?.financial_implications ? `Financial Implications: ${JSON.stringify(meeting.ai_analysis.financial_implications)}` : ''}
+${meeting.url ? `URL: ${meeting.url}` : ''}`,
+            content_type: 'civic_meeting',
+            similarity_score: 0.9,
+            metadata: {
+              title: meeting.title,
+              date: meeting.date,
+              commission: meeting.commission,
+              url: meeting.url,
+              source: 'civic_api'
+            }
           }));
           
-          if (civicApiResponse.ok) {
-            const civicData = await civicApiResponse.json();
-            const civicResults = civicData.results || [];
-            
-            // Convert civic API results to context format
-            const additionalContext = civicResults.slice(0, max_context_results).map((meeting: any) => ({
-              meeting_id: meeting.id,
-              content: `Title: ${meeting.title}\nDate: ${meeting.date}\nCommission: ${meeting.commission || meeting.government_body}\nSummary: ${meeting.summary}${meeting.ai_analysis ? `\nKey Decisions: ${JSON.stringify(meeting.ai_analysis.key_decisions || [])}` : ''}`,
-              content_type: 'meeting_summary',
-              similarity_score: 0.8,
-              metadata: {
-                title: meeting.title,
-                date: meeting.date,
-                commission: meeting.commission,
-                url: meeting.url
-              }
-            }));
-            
-            contextResults = [...contextResults, ...additionalContext];
-            console.log(`Added ${additionalContext.length} results from civic API search`);
-          }
-        } catch (civicError) {
-          console.warn('Civic API search failed:', civicError);
+          // Add civic API results to context, giving them priority
+          contextResults = [...additionalContext, ...contextResults];
+          console.log(`Total context results: ${contextResults.length}`);
+        } else {
+          console.warn(`Civic API search failed with status: ${civicApiResponse.status}`);
         }
+      } catch (civicError) {
+        console.warn('Civic API search failed:', civicError);
       }
     }
 
@@ -144,13 +154,13 @@ Answer the user's question based on the available information.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
-        max_tokens: 1000,
-        temperature: 0.7,
+        max_tokens: 1500,
+        temperature: 0.3,
       }),
     });
 

@@ -100,7 +100,7 @@ const Chat = () => {
     <>
       <Navigation />
       <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-8 max-w-4xl min-h-screen flex flex-col">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-primary mb-2">Civic AI Assistant</h1>
           <p className="text-muted-foreground">
@@ -108,7 +108,7 @@ const Chat = () => {
           </p>
         </div>
 
-        <Card className="h-[600px] flex flex-col">
+        <Card className="flex-1 flex flex-col min-h-0">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2">
               <Bot className="h-5 w-5 text-primary" />
@@ -116,8 +116,8 @@ const Chat = () => {
             </CardTitle>
           </CardHeader>
           
-          <CardContent className="flex-1 flex flex-col p-0">
-            <ScrollArea ref={scrollAreaRef} className="flex-1 px-6">
+          <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+            <ScrollArea ref={scrollAreaRef} className="flex-1 px-6 min-h-0">
               <div className="space-y-4 py-4">
                 {messages.map((message) => (
                   <div
