@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Process Meeting Embeddings</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .status { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .loading { background: #e3f2fd; }
+        .success { background: #e8f5e9; }
+        .error { background: #ffebee; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Meeting Embeddings Processor</h1>
+    <p>This will process meetings from your API and create embeddings for the AI chat.</p>
+    
+    <button onclick="processBatch()">Start Processing Meetings</button>
+    <button onclick="checkStatus()">Check Current Status</button>
+    
+    <div id="status"></div>
+    <div id="results"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://ybowdicitmmrltuyvxcz.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlib3dkaWNpdG1tcmx0dXl2eGN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3MjQ3ODUsImV4cCI6MjA2ODMwMDc4NX0.EyArJ3ROfij_B3l1JcsOiHFyMfh_z8SzbmwWPqGod7g';
+
+        async function processBatch(startPage = 1, batchSize = 10) {
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            
+            statusDiv.innerHTML = '<div class="status loading">Starting batch processing...</div>';
+            resultsDiv.innerHTML = '';
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/batch-process-meetings`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        startPage: startPage,
+                        batchSize: batchSize
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    statusDiv.innerHTML = `<div class="status success">✅ Success! Processed ${result.processedCount} meetings</div>`;
+                    resultsDiv.innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+                } else {
+                    statusDiv.innerHTML = `<div class="status error">❌ Error: ${result.error}</div>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">❌ Network Error: ${error.message}</div>`;
+                console.error('Processing error:', error);
+            }
+        }
+
+        async function checkStatus() {
+            const statusDiv = document.getElementById('status');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/document_embeddings?select=count()`, {
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY
+                    }
+                });
+
+                const result = await response.json();
+                const count = Array.isArray(result) ? result.length : 0;
+                
+                statusDiv.innerHTML = `<div class="status">📊 Current embeddings in database: ${count}</div>`;
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="status error">❌ Error checking status: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-check status on load
+        checkStatus();
+    </script>
+</body>
+</html>
