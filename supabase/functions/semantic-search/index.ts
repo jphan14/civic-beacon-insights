@@ -47,7 +47,7 @@ serve(async (req) => {
     if (isTemporalQuery) {
       console.log('Filtering for recent documents (2024-2025)');
       textQuery = textQuery
-        .or(`metadata->>date.gte.2024-01-01,created_at.gte.2024-01-01`)
+        .gte('metadata->>date', '2024-01-01')
         .order('metadata->>date', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
     } else {
