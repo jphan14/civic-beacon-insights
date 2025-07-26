@@ -1,43 +1,142 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Debug Commissions</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Commission Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .meeting { margin: 10px 0; padding: 10px; background: #f9f9f9; }
+        .date { font-weight: bold; color: #0066cc; }
+        .commission { color: #cc6600; }
+        button { margin: 5px; padding: 10px 15px; }
+        .highlight { background: yellow; }
+    </style>
 </head>
 <body>
-    <h1>Commission Debug</h1>
-    <div id="output"></div>
+    <h1>Commission Data Debug - Date Sorting Issue</h1>
     
+    <div>
+        <button onclick="testAllCommissions()">Test All Commissions</button>
+        <button onclick="testDesignCommission()">Test Design Commission</button>
+        <button onclick="compareDates()">Compare Date Sorting</button>
+    </div>
+
+    <div id="results"></div>
+
     <script>
-        async function checkCommissions() {
-            const output = document.getElementById('output');
+        const API_BASE = 'https://selecting-essentially-throughout-stupid.trycloudflare.com';
+        
+        async function testAllCommissions() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h2>Loading All Commissions...</h2>';
             
             try {
-                // Check government bodies endpoint
-                const bodiesResponse = await fetch('https://selecting-essentially-throughout-stupid.trycloudflare.com/api/government-bodies');
-                const bodiesData = await bodiesResponse.json();
+                const response = await fetch(`${API_BASE}/api/summaries?page=1&limit=20`);
+                const data = await response.json();
                 
-                output.innerHTML += '<h2>Government Bodies Endpoint:</h2>';
-                output.innerHTML += '<pre>' + JSON.stringify(bodiesData, null, 2) + '</pre>';
-                
-                // Check a few different pages for commission variety
-                for (let page = 1; page <= 5; page++) {
-                    const summariesResponse = await fetch(`https://selecting-essentially-throughout-stupid.trycloudflare.com/api/summaries?page=${page}&limit=20`);
-                    const summariesData = await summariesResponse.json();
-                    
-                    const commissions = [...new Set(summariesData.summaries?.map(s => s.commission))];
-                    const govBodies = [...new Set(summariesData.summaries?.map(s => s.government_body))];
-                    
-                    output.innerHTML += `<h3>Page ${page}:</h3>`;
-                    output.innerHTML += `<p>Commissions: ${commissions.join(', ')}</p>`;
-                    output.innerHTML += `<p>Government Bodies: ${govBodies.join(', ')}</p>`;
-                }
-                
+                const html = `
+                    <div class="section">
+                        <h2>All Commissions (No Filter) - Should show mixed commissions sorted by date</h2>
+                        <p><strong>Total:</strong> ${data.pagination?.total_count || 'N/A'}</p>
+                        <p><strong>Filters Applied:</strong> ${JSON.stringify(data.metadata?.filters_applied || {})}</p>
+                        <h3>First 10 Meetings:</h3>
+                        ${data.summaries.slice(0, 10).map((meeting, index) => `
+                            <div class="meeting ${meeting.commission === 'Design Commission' ? 'highlight' : ''}">
+                                <div><strong>#${index + 1}</strong></div>
+                                <div class="date">${meeting.date}</div>
+                                <div class="commission">${meeting.commission}</div>
+                                <div>${meeting.title}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                results.innerHTML = html;
             } catch (error) {
-                output.innerHTML += '<p>Error: ' + error.message + '</p>';
+                results.innerHTML = `<div class="section"><h2>Error:</h2><p>${error.message}</p></div>`;
             }
         }
         
-        checkCommissions();
+        async function testDesignCommission() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h2>Loading Design Commission...</h2>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/summaries?page=1&limit=5&commission=Design Commission`);
+                const data = await response.json();
+                
+                const html = `
+                    <div class="section">
+                        <h2>Design Commission Only</h2>
+                        <p><strong>Total:</strong> ${data.pagination?.total_count || 'N/A'}</p>
+                        <p><strong>Most Recent Meeting:</strong> ${data.summaries[0]?.date || 'N/A'}</p>
+                        <h3>Recent Meetings:</h3>
+                        ${data.summaries.map((meeting, index) => `
+                            <div class="meeting highlight">
+                                <div><strong>#${index + 1}</strong></div>
+                                <div class="date">${meeting.date}</div>
+                                <div class="commission">${meeting.commission}</div>
+                                <div>${meeting.title}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                results.innerHTML = html;
+            } catch (error) {
+                results.innerHTML = `<div class="section"><h2>Error:</h2><p>${error.message}</p></div>`;
+            }
+        }
+        
+        async function compareDates() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h2>Comparing Date Sorting...</h2>';
+            
+            try {
+                // Get all commissions
+                const allResponse = await fetch(`${API_BASE}/api/summaries?page=1&limit=20`);
+                const allData = await allResponse.json();
+                
+                // Get Design Commission
+                const designResponse = await fetch(`${API_BASE}/api/summaries?page=1&limit=5&commission=Design Commission`);
+                const designData = await designResponse.json();
+                
+                const mostRecentDesign = designData.summaries[0];
+                const firstPageAll = allData.summaries;
+                
+                const html = `
+                    <div class="section">
+                        <h2>Date Sorting Comparison</h2>
+                        <h3>Most Recent Design Commission Meeting:</h3>
+                        <div class="meeting highlight">
+                            <div class="date">${mostRecentDesign?.date}</div>
+                            <div class="commission">${mostRecentDesign?.commission}</div>
+                            <div>${mostRecentDesign?.title}</div>
+                        </div>
+                        
+                        <h3>First 5 from "All Commissions" query:</h3>
+                        ${firstPageAll.slice(0, 5).map((meeting, index) => `
+                            <div class="meeting">
+                                <div><strong>#${index + 1}</strong></div>
+                                <div class="date">${meeting.date}</div>
+                                <div class="commission">${meeting.commission}</div>
+                                <div>${meeting.title}</div>
+                            </div>
+                        `).join('')}
+                        
+                        <h3>Analysis:</h3>
+                        <p><strong>Issue:</strong> Design Commission meeting from ${mostRecentDesign?.date} should appear before meetings from ${firstPageAll[0]?.date} when sorted by newest first, but it doesn't show up in the "All Commissions" query.</p>
+                        <p><strong>This suggests the API is not properly sorting across all commissions when no commission filter is applied.</strong></p>
+                    </div>
+                `;
+                results.innerHTML = html;
+            } catch (error) {
+                results.innerHTML = `<div class="section"><h2>Error:</h2><p>${error.message}</p></div>`;
+            }
+        }
+        
+        // Auto-test comparison on load
+        window.onload = compareDates;
     </script>
 </body>
 </html>
