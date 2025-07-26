@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Bot, User, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import Navigation from "@/components/Navigation";
 
 interface Message {
   id: string;
@@ -96,7 +97,9 @@ const Chat = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <Navigation />
+      <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-primary mb-2">Civic AI Assistant</h1>
@@ -176,6 +179,7 @@ const Chat = () => {
         </Card>
       </div>
     </div>
+    </>
   );
 };
 

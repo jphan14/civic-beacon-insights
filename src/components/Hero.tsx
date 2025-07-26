@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, FileText, Users } from "lucide-react";
+import { ArrowRight, FileText, Users, Bot } from "lucide-react";
 import heroImage from "@/assets/civic-hero.jpg";
 import { useCivicSummariesSimple } from "@/hooks/useCivicData";
+import { Link } from "react-router-dom";
 
 const Hero = () => {
   const { summaries, pagination } = useCivicSummariesSimple();
@@ -35,16 +36,44 @@ const Hero = () => {
 
             {/* Stats */}
             <div className="py-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-xl">
-                  <FileText className="h-8 w-8 text-primary" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-foreground">
-                    {roundedDownCount > 0 ? `Over ${roundedDownCount} Meetings` : `${totalMeetings}+ Meetings`}
-                  </div>
-                  <div className="text-base text-muted-foreground">AI Summarized</div>
-                </div>
+              <div className="flex flex-col sm:flex-row gap-4">
+                {/* Meetings Count Button */}
+                <Link to="/archive">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="flex items-center gap-4 p-6 h-auto bg-card hover:bg-accent/50 border-border hover:border-primary/50 transition-all duration-300"
+                  >
+                    <div className="p-3 bg-primary/10 rounded-xl">
+                      <FileText className="h-8 w-8 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-2xl font-bold text-foreground">
+                        1,800+ Meetings
+                      </div>
+                      <div className="text-base text-muted-foreground">Historical Archives</div>
+                    </div>
+                  </Button>
+                </Link>
+
+                {/* AI Assistant Button */}
+                <Link to="/chat">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="flex items-center gap-4 p-6 h-auto bg-card hover:bg-accent/50 border-border hover:border-primary/50 transition-all duration-300"
+                  >
+                    <div className="p-3 bg-accent/10 rounded-xl">
+                      <Bot className="h-8 w-8 text-accent" />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-2xl font-bold text-foreground">
+                        AI Assistant
+                      </div>
+                      <div className="text-base text-muted-foreground">Ask Questions</div>
+                    </div>
+                  </Button>
+                </Link>
               </div>
             </div>
 

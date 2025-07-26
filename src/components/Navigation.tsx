@@ -1,38 +1,46 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, FileText, Archive, Info, Search, MessageCircle } from "lucide-react";
+import { Menu, Archive, Info, MessageCircle } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
 
   const navItems = [
-    { label: "Meeting Summaries", href: "#summaries", icon: FileText },
     { label: "Historical Archives", href: "/archive", icon: Archive },
     { label: "AI Assistant", href: "/chat", icon: MessageCircle },
-    { label: "Search", href: "#search", icon: Search },
     { label: "About", href: "#about", icon: Info },
   ];
 
-  const NavLink = ({ item }: { item: typeof navItems[0] }) => (
-    <a
-      href={item.href}
-      className="flex items-center gap-2 text-foreground hover:text-primary transition-colors duration-200 font-medium"
-      onClick={() => setIsOpen(false)}
-    >
-      <item.icon className="h-4 w-4" />
-      {item.label}
-    </a>
-  );
+  const NavLink = ({ item }: { item: typeof navItems[0] }) => {
+    const isActive = location.pathname === item.href;
+    
+    return (
+      <Link
+        to={item.href.startsWith('#') ? '/' + item.href : item.href}
+        className={`flex items-center gap-2 transition-colors duration-200 font-medium ${
+          isActive 
+            ? 'text-primary' 
+            : 'text-foreground hover:text-primary'
+        }`}
+        onClick={() => setIsOpen(false)}
+      >
+        <item.icon className="h-4 w-4" />
+        {item.label}
+      </Link>
+    );
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex-shrink-0">
+          <Link to="/" className="flex-shrink-0">
             <h1 className="text-2xl font-bold text-primary">Civic Beacon: La Canada Flintridge</h1>
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:block">

@@ -10,6 +10,7 @@ import { Calendar, Clock, Users, Search, ExternalLink, AlertCircle, Loader2, Ref
 import { Link } from "react-router-dom";
 import { useCivicSummaries } from "@/hooks/useCivicData";
 import type { CivicSummary } from "@/services/civicApi";
+import Navigation from "@/components/Navigation";
 
 const Archive = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -185,7 +186,9 @@ const Archive = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <Navigation />
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border/50 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -623,6 +626,7 @@ const Archive = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 
