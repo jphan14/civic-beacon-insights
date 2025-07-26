@@ -83,7 +83,7 @@ serve(async (req) => {
     let searchQuery = supabase
       .from('document_embeddings')
       .select('meeting_id, content, content_type, metadata, created_at')
-      .or(`content.ilike.%${query}%,metadata->>title.ilike.%${query}%,metadata->>date.like.%2024-12%`)
+      .or(`content.ilike.%${query}%,metadata->>title.ilike.%${query}%`)
       .limit(50);
 
     // Add content type filter if specified
