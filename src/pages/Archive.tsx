@@ -8,7 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Clock, Users, Search, ExternalLink, AlertCircle, Loader2, RefreshCcw, FileText, ChevronDown, ChevronUp, Bot, Sparkles, Filter, ArrowLeft, CalendarIcon } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useCivicSummaries } from "@/hooks/useCivicData";
+import { useCivicSummaries, useCommissionStatistics } from "@/hooks/useCivicData";
 import type { CivicSummary } from "@/services/civicApi";
 import Navigation from "@/components/Navigation";
 
@@ -20,6 +20,9 @@ const Archive = () => {
   const [expandedMeetings, setExpandedMeetings] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20; // Match API default
+  
+  // Get commission statistics to populate filter options
+  const { commissions: availableCommissions, statistics: commissionStats, loading: statsLoading } = useCommissionStatistics();
   
   // Use the enhanced hook with proper pagination and filtering
   const { summaries, statistics, pagination, loading: isLoading, error, refetch } = useCivicSummaries({
@@ -84,8 +87,8 @@ const Archive = () => {
   const totalPages = pagination?.total_pages || Math.ceil(sortedMeetings.length / itemsPerPage);
   const paginatedMeetings = pagination ? summaries : sortedMeetings; // Use API results if paginated, otherwise use sorted
   
-  // Get unique commissions for filter (from all available data)
-  const commissions = Array.from(new Set(summaries.map(meeting => meeting.commission).filter(Boolean)));
+  // Use commission statistics for filter options
+  const commissions = availableCommissions.length > 0 ? availableCommissions : Array.from(new Set(summaries.map(meeting => meeting.commission).filter(Boolean)));
   
   // Reset page when commission filter changes (triggers new API call)
   useEffect(() => {
@@ -278,7 +281,7 @@ const Archive = () => {
       {/* Content */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Loading State */}
-        {isLoading && (
+        {(isLoading || statsLoading) && (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <span className="ml-3 text-lg text-muted-foreground">Loading meeting summaries...</span>
@@ -307,7 +310,7 @@ const Archive = () => {
         )}
 
         {/* Results Info */}
-        {!isLoading && !error && (
+        {!isLoading && !statsLoading && !error && (
           <div className="mb-6 flex items-center justify-between">
             <div className="text-muted-foreground">
               Showing {paginatedMeetings.length} of {totalCount} meetings
@@ -315,6 +318,11 @@ const Archive = () => {
               {pagination && (
                 <span className="text-xs block sm:inline sm:ml-2 text-muted-foreground/80">
                   Server-side pagination active
+                </span>
+              )}
+              {commissionStats && (
+                <span className="text-xs block sm:inline sm:ml-2 text-muted-foreground/80">
+                  {Object.keys(commissionStats.commission_breakdown).length} commission types available
                 </span>
               )}
             </div>

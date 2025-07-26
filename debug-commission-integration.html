@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commission Integration Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+        button { margin: 5px; padding: 8px 15px; }
+    </style>
+</head>
+<body>
+    <h1>Commission Integration Debug</h1>
+    <p>Testing the integration with the updated API endpoints to verify commission data is working.</p>
+    
+    <button onclick="testStatisticsEndpoint()">Test Statistics Endpoint</button>
+    <button onclick="testCommissionFiltering()">Test Commission Filtering</button>
+    <button onclick="testAllEndpoints()">Test All Endpoints</button>
+    
+    <div id="output"></div>
+    
+    <script>
+        const BASE_URL = 'https://selecting-essentially-throughout-stupid.trycloudflare.com';
+        
+        async function testStatisticsEndpoint() {
+            const output = document.getElementById('output');
+            output.innerHTML += '<div class="test-section"><h2>Testing Statistics Endpoint</h2>';
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/statistics`);
+                const data = await response.json();
+                
+                output.innerHTML += '<div class="success">';
+                output.innerHTML += '<h3>✅ Statistics Endpoint Working</h3>';
+                output.innerHTML += '<h4>Commission Breakdown:</h4>';
+                output.innerHTML += '<pre>' + JSON.stringify(data.commission_breakdown, null, 2) + '</pre>';
+                output.innerHTML += '<h4>Available Commissions:</h4>';
+                output.innerHTML += '<ul>';
+                Object.keys(data.commission_breakdown || {}).forEach(commission => {
+                    output.innerHTML += `<li><strong>${commission}</strong>: ${data.commission_breakdown[commission]} meetings</li>`;
+                });
+                output.innerHTML += '</ul>';
+                output.innerHTML += '</div>';
+                
+            } catch (error) {
+                output.innerHTML += '<div class="error">';
+                output.innerHTML += '<h3>❌ Statistics Endpoint Failed</h3>';
+                output.innerHTML += '<p>Error: ' + error.message + '</p>';
+                output.innerHTML += '</div>';
+            }
+            
+            output.innerHTML += '</div>';
+        }
+        
+        async function testCommissionFiltering() {
+            const output = document.getElementById('output');
+            output.innerHTML += '<div class="test-section"><h2>Testing Commission Filtering</h2>';
+            
+            const commissionsToTest = [
+                'Planning Commission',
+                'Youth Council', 
+                'Design Commission',
+                'Parks & Recreation Commission'
+            ];
+            
+            for (const commission of commissionsToTest) {
+                try {
+                    const encodedCommission = encodeURIComponent(commission);
+                    const response = await fetch(`${BASE_URL}/api/summaries?commission=${encodedCommission}&limit=3`);
+                    const data = await response.json();
+                    
+                    output.innerHTML += '<div class="success">';
+                    output.innerHTML += `<h3>✅ ${commission}</h3>`;
+                    output.innerHTML += `<p>Found ${data.summaries?.length || 0} meetings</p>`;
+                    if (data.summaries && data.summaries.length > 0) {
+                        output.innerHTML += '<h4>Sample meetings:</h4>';
+                        output.innerHTML += '<ul>';
+                        data.summaries.slice(0, 3).forEach(meeting => {
+                            output.innerHTML += `<li><strong>${meeting.title}</strong> (${meeting.date}) - Commission: ${meeting.commission}</li>`;
+                        });
+                        output.innerHTML += '</ul>';
+                    }
+                    output.innerHTML += '</div>';
+                    
+                } catch (error) {
+                    output.innerHTML += '<div class="error">';
+                    output.innerHTML += `<h3>❌ ${commission} Failed</h3>`;
+                    output.innerHTML += '<p>Error: ' + error.message + '</p>';
+                    output.innerHTML += '</div>';
+                }
+            }
+            
+            output.innerHTML += '</div>';
+        }
+        
+        async function testAllEndpoints() {
+            output.innerHTML = '<h2>Running All Tests...</h2>';
+            await testStatisticsEndpoint();
+            await testCommissionFiltering();
+            
+            // Test unfiltered endpoint
+            const output = document.getElementById('output');
+            output.innerHTML += '<div class="test-section"><h2>Testing Unfiltered Endpoint</h2>';
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/summaries?limit=10`);
+                const data = await response.json();
+                
+                output.innerHTML += '<div class="success">';
+                output.innerHTML += '<h3>✅ Unfiltered Endpoint Working</h3>';
+                output.innerHTML += `<p>Found ${data.summaries?.length || 0} meetings</p>`;
+                
+                // Check unique commissions in the data
+                const commissions = [...new Set(data.summaries?.map(m => m.commission).filter(Boolean))];
+                output.innerHTML += '<h4>Commissions in sample data:</h4>';
+                output.innerHTML += '<ul>';
+                commissions.forEach(commission => {
+                    const count = data.summaries.filter(m => m.commission === commission).length;
+                    output.innerHTML += `<li><strong>${commission}</strong>: ${count} meetings in sample</li>`;
+                });
+                output.innerHTML += '</ul>';
+                output.innerHTML += '</div>';
+                
+            } catch (error) {
+                output.innerHTML += '<div class="error">';
+                output.innerHTML += '<h3>❌ Unfiltered Endpoint Failed</h3>';
+                output.innerHTML += '<p>Error: ' + error.message + '</p>';
+                output.innerHTML += '</div>';
+            }
+            
+            output.innerHTML += '</div>';
+        }
+    </script>
+</body>
+</html>

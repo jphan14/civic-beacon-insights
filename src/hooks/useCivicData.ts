@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { civicApi, type CivicSummary, type CivicStatistics, type ArchiveResponse, type PaginationInfo, type SummariesResponse, type SearchResponse } from '../services/civicApi';
+import { civicApi, getStatistics, type CivicSummary, type CivicStatistics, type ArchiveResponse, type PaginationInfo, type SummariesResponse, type SearchResponse } from '../services/civicApi';
 
 // Enhanced hook for paginated summaries with filtering
 export const useCivicSummaries = (options: {
@@ -234,4 +234,39 @@ export const useMeetingDetails = (meetingId: string | null) => {
   }, [meetingId]);
 
   return { meeting, loading, error };
+};
+
+// Hook for getting commission statistics
+export const useCommissionStatistics = () => {
+  const [statistics, setStatistics] = useState<{ commission_breakdown: Record<string, number> } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStatistics = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        console.log('Fetching commission statistics...');
+        const data = await getStatistics();
+        console.log('Commission statistics response:', data);
+        setStatistics(data);
+      } catch (err) {
+        console.error('Failed to fetch commission statistics:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch statistics');
+        setStatistics(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStatistics();
+  }, []);
+
+  return { 
+    statistics, 
+    loading, 
+    error,
+    commissions: statistics?.commission_breakdown ? Object.keys(statistics.commission_breakdown) : []
+  };
 };

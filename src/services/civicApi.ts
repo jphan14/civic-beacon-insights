@@ -82,6 +82,7 @@ export interface CivicStatistics {
   template_enhanced_count?: number;
   recent_updates?: number;
   version?: string;
+  commission_breakdown?: Record<string, number>;
 }
 
 export interface SummariesResponse {
@@ -214,7 +215,14 @@ class CivicBeaconAPI {
     
     if (options.page) params.set('page', options.page.toString());
     if (options.limit) params.set('limit', options.limit.toString());
-    if (options.commission?.length) params.set('commission', options.commission.join(','));
+    if (options.commission?.length) {
+      // Handle single commission vs multiple commissions
+      if (options.commission.length === 1) {
+        params.set('commission', options.commission[0]);
+      } else {
+        params.set('commission', options.commission.join(','));
+      }
+    }
     if (options.year?.length) params.set('year', options.year.join(','));
     if (options.ai_enhanced !== undefined) params.set('ai_enhanced', options.ai_enhanced.toString());
     if (options.template_enhanced !== undefined) params.set('template_enhanced', options.template_enhanced.toString());
@@ -297,10 +305,10 @@ class CivicBeaconAPI {
   }
 
   /**
-   * Gets detailed statistics
+   * Gets detailed statistics including commission breakdown
    */
-  async getStatistics(): Promise<any> {
-    return this.fetchWithRetry('/api/stats');
+  async getStatistics(): Promise<CivicStatistics & { commission_breakdown: Record<string, number> }> {
+    return this.fetchWithRetry('/api/statistics');
   }
 
   /**
@@ -329,6 +337,9 @@ export const getMeetingDetails = (meetingId: string): Promise<CivicSummary> =>
 
 export const getGovernmentBodies = (): Promise<{ government_bodies: string[]; current_count: number; archive_count: number; total_count: number }> => 
   civicApi.getGovernmentBodies();
+
+export const getStatistics = (): Promise<CivicStatistics & { commission_breakdown: Record<string, number> }> => 
+  civicApi.getStatistics();
 
 export const checkHealth = (): Promise<HealthResponse> => 
   civicApi.checkHealth();
