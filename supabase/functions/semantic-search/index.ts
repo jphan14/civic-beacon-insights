@@ -29,84 +29,162 @@ serve(async (req) => {
     console.log(`Searching for: "${query}"`);
     console.log(`Query length: ${query.length}, type: ${typeof query}`);
 
-    // Test with multiple search approaches
-    console.log('Testing different search approaches...');
+    // First, try to generate an embedding for the query using OpenAI
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     
-    // First try exact TrueFix search
-    const { data: truefixTest, error: truefixError } = await supabase
-      .from('document_embeddings')
-      .select('meeting_id, content_type')
-      .ilike('content', '%TrueFix%')
-      .limit(1);
-    
-    console.log(`TrueFix direct test found: ${truefixTest?.length || 0} results`);
-    
-    // Then try multiple variations of the user's query
-    const searchVariations = [
-      query,
-      query.toLowerCase(),
-      // Add budget-related terms
-      'budget',
-      'fiscal year',
-      'appropriations',
-      'warrant resolution',
-      'financial',
-      'spending',
-      // Add common meeting terms
-      'city council',
-      'commission',
-      'resolution',
-      'motion',
-      'ordinance'
-    ];
-    
-    console.log('Testing search variations:', searchVariations);
-    
-    let embeddings = null;
-    let error = null;
-    
-    // Try each variation until we find results
-    for (const searchTerm of searchVariations) {
-      const { data: testData, error: testError } = await supabase
+    if (!openAIApiKey) {
+      console.warn('OpenAI API key not found, falling back to text search');
+      // Fallback to text-based search
+      const { data: textResults, error: textError } = await supabase
         .from('document_embeddings')
         .select('meeting_id, content, content_type, metadata, created_at')
-        .ilike('content', `%${searchTerm}%`)
-        .limit(25);
+        .textSearch('content', query)
+        .limit(limit);
       
-      console.log(`Search for "${searchTerm}" found: ${testData?.length || 0} results`);
-      
-      if (testData && testData.length > 0) {
-        embeddings = testData;
-        error = testError;
-        console.log(`Using results from search term: "${searchTerm}"`);
-        break;
+      if (textError) {
+        console.error('Text search error:', textError);
+        return new Response(
+          JSON.stringify({ error: 'Search failed', details: textError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-    }
 
-    if (error) {
-      console.error('Search error:', error);
+      const results = (textResults || []).map(item => ({
+        meeting_id: item.meeting_id,
+        content: item.content,
+        content_type: item.content_type,
+        similarity_score: 0.8,
+        metadata: item.metadata,
+        created_at: item.created_at,
+      }));
+
       return new Response(
-        JSON.stringify({ error: 'Search failed', details: error.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          results: results.slice(0, limit),
+          query,
+          total_results: results.length,
+          search_type: 'text'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Found ${embeddings?.length || 0} results`);
+    // Generate embedding for the query
+    console.log('Generating embedding for query...');
+    const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: query,
+      }),
+    });
+
+    if (!embeddingResponse.ok) {
+      console.error('OpenAI embedding failed, falling back to text search');
+      // Fallback to text search
+      const { data: fallbackResults, error: fallbackError } = await supabase
+        .from('document_embeddings')
+        .select('meeting_id, content, content_type, metadata, created_at')
+        .ilike('content', `%${query}%`)
+        .limit(limit);
+      
+      if (fallbackError) {
+        console.error('Fallback search error:', fallbackError);
+        return new Response(
+          JSON.stringify({ error: 'Search failed', details: fallbackError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const results = (fallbackResults || []).map(item => ({
+        meeting_id: item.meeting_id,
+        content: item.content,
+        content_type: item.content_type,
+        similarity_score: 0.7,
+        metadata: item.metadata,
+        created_at: item.created_at,
+      }));
+
+      return new Response(
+        JSON.stringify({ 
+          results: results.slice(0, limit),
+          query,
+          total_results: results.length,
+          search_type: 'text_fallback'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const embeddingData = await embeddingResponse.json();
+    const queryEmbedding = embeddingData.data[0].embedding;
+    
+    console.log('Generated embedding, performing similarity search...');
+
+    // Perform similarity search using the embedding
+    const { data: embeddings, error } = await supabase.rpc('match_documents', {
+      query_embedding: queryEmbedding,
+      match_threshold: threshold,
+      match_count: limit * 2 // Get more results to ensure diversity
+    });
+
+    if (error) {
+      console.error('Vector search error:', error);
+      // Fallback to text search if vector search fails
+      const { data: fallbackResults, error: fallbackError } = await supabase
+        .from('document_embeddings')
+        .select('meeting_id, content, content_type, metadata, created_at')
+        .ilike('content', `%${query}%`)
+        .limit(limit);
+      
+      if (fallbackError) {
+        console.error('Final fallback search error:', fallbackError);
+        return new Response(
+          JSON.stringify({ error: 'All search methods failed' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const results = (fallbackResults || []).map(item => ({
+        meeting_id: item.meeting_id,
+        content: item.content,
+        content_type: item.content_type,
+        similarity_score: 0.7,
+        metadata: item.metadata,
+        created_at: item.created_at,
+      }));
+
+      return new Response(
+        JSON.stringify({ 
+          results: results.slice(0, limit),
+          query,
+          total_results: results.length,
+          search_type: 'text_fallback_after_vector_error'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Vector search found ${embeddings?.length || 0} results`);
 
     const results = (embeddings || []).map(item => ({
       meeting_id: item.meeting_id,
       content: item.content,
       content_type: item.content_type,
-      similarity_score: 0.9,
+      similarity_score: item.similarity,
       metadata: item.metadata,
       created_at: item.created_at,
     }));
 
-    // Return more diverse results - don't just take the first N, spread across different meetings
+    // Return diverse results - prioritize different meetings
     const diverseResults = [];
     const seenMeetings = new Set();
     
-    // First pass: add unique meetings
+    // First pass: add unique meetings with highest similarity
     for (const result of results) {
       if (!seenMeetings.has(result.meeting_id) && diverseResults.length < limit) {
         diverseResults.push(result);
@@ -114,10 +192,13 @@ serve(async (req) => {
       }
     }
     
-    // Second pass: fill remaining slots with any results
+    // Second pass: fill remaining slots if needed
     for (const result of results) {
-      if (diverseResults.length < limit && !diverseResults.find(r => r.meeting_id === result.meeting_id)) {
-        diverseResults.push(result);
+      if (diverseResults.length < limit) {
+        const existingFromSameMeeting = diverseResults.filter(r => r.meeting_id === result.meeting_id).length;
+        if (existingFromSameMeeting < 2) { // Allow up to 2 results per meeting
+          diverseResults.push(result);
+        }
       }
     }
 
@@ -125,7 +206,8 @@ serve(async (req) => {
       JSON.stringify({ 
         results: diverseResults,
         query,
-        total_results: diverseResults.length
+        total_results: diverseResults.length,
+        search_type: 'vector'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
