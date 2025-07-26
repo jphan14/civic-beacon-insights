@@ -79,13 +79,6 @@ const Hero = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                size="lg" 
-                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-civic"
-              >
-                Browse Meeting Summaries
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
               <Button variant="outline" size="lg">
                 Learn More
               </Button>
