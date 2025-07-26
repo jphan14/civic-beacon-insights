@@ -57,7 +57,7 @@ const Navigation = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex-shrink-0">
-            <h1 className="text-2xl font-bold text-primary">Civic Beacon: La Canada Flintridge</h1>
+            <h1 className="text-2xl font-bold text-primary">Civic Beacon: La Cañada Flintridge</h1>
           </Link>
 
           {/* Desktop Navigation */}
