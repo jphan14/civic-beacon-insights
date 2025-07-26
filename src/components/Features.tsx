@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Search, Archive, Zap, Users, Shield } from "lucide-react";
+import { FileText, Bot, Archive, Zap, Users, Shield } from "lucide-react";
 
 const Features = () => {
   const features = [
@@ -10,9 +10,9 @@ const Features = () => {
       color: "primary"
     },
     {
-      icon: Search,
-      title: "Smart Search",
-      description: "Find specific topics, decisions, or discussions across all meeting records with intelligent search capabilities.",
+      icon: Bot,
+      title: "AI Assistant",
+      description: "Chat with our intelligent AI assistant to get instant answers about city meetings, decisions, and public records.",
       color: "accent"
     },
     {
