@@ -280,6 +280,12 @@ Please answer the user's question based solely on the information provided above
         response: aiResponse,
         context_documents: contextResults.length,
         relevant_meetings: relevantMeetings,
+        source_urls: contextResults.map(r => ({
+          meeting_id: r.meeting_id,
+          url: r.metadata?.source_url || r.meeting_id,
+          title: r.metadata?.title || 'Meeting Document',
+          date: r.metadata?.date
+        })),
         session_id 
       }),
       { 

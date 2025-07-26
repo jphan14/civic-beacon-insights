@@ -3,16 +3,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Loader2 } from "lucide-react";
+import { Send, Bot, User, Loader2, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
+
+interface SourceUrl {
+  meeting_id: string;
+  url: string;
+  title: string;
+  date?: string;
+}
 
 interface Message {
   id: string;
   content: string;
   isBot: boolean;
   timestamp: Date;
+  sources?: SourceUrl[];
 }
 
 const Chat = () => {
@@ -72,6 +80,7 @@ const Chat = () => {
         content: data.response || "I apologize, but I couldn't process your request. Please try again.",
         isBot: true,
         timestamp: new Date(),
+        sources: data.source_urls || [],
       };
 
       setMessages(prev => [...prev, botMessage]);
@@ -132,18 +141,39 @@ const Chat = () => {
                       {message.isBot ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
                     </div>
                     
-                    <div className={`flex-1 max-w-[80%] ${!message.isBot ? "text-right" : ""}`}>
-                      <div className={`inline-block p-3 rounded-lg ${
-                        message.isBot
-                          ? "bg-muted text-foreground"
-                          : "bg-primary text-primary-foreground"
-                      }`}>
-                        <p className="whitespace-pre-wrap">{message.content}</p>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {message.timestamp.toLocaleTimeString()}
-                      </p>
-                    </div>
+                     <div className={`flex-1 max-w-[80%] ${!message.isBot ? "text-right" : ""}`}>
+                       <div className={`inline-block p-3 rounded-lg ${
+                         message.isBot
+                           ? "bg-muted text-foreground"
+                           : "bg-primary text-primary-foreground"
+                       }`}>
+                         <p className="whitespace-pre-wrap">{message.content}</p>
+                         
+                         {/* Show source links for bot messages */}
+                         {message.isBot && message.sources && message.sources.length > 0 && (
+                           <div className="mt-3 pt-3 border-t border-border/50">
+                             <p className="text-xs font-medium text-muted-foreground mb-2">Sources:</p>
+                             <div className="space-y-1">
+                               {message.sources.map((source, index) => (
+                                 <a
+                                   key={index}
+                                   href={source.url}
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                                 >
+                                   <ExternalLink className="h-3 w-3" />
+                                   {source.title} {source.date && `(${source.date})`}
+                                 </a>
+                               ))}
+                             </div>
+                           </div>
+                         )}
+                       </div>
+                       <p className="text-xs text-muted-foreground mt-1">
+                         {message.timestamp.toLocaleTimeString()}
+                       </p>
+                     </div>
                   </div>
                 ))}
                 
