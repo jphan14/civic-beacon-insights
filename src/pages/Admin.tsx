@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Database, Play, CheckCircle, Search } from "lucide-react";
+import { Loader2, Database, Play, CheckCircle, Search, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
@@ -144,6 +144,33 @@ const Admin = () => {
     }
   };
 
+  const testSemanticSearch = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("semantic-search", {
+        body: {
+          query: "TrueFix Tech Repair window sign",
+          limit: 5
+        }
+      });
+      
+      if (error) throw error;
+      
+      console.log('Semantic Search Results:', data);
+      toast({
+        title: "Semantic Search Test Complete",
+        description: `Found ${data?.results?.length || 0} results. Check console for details.`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Error testing semantic search:', error);
+      toast({
+        title: "Error",
+        description: "Failed to test semantic search",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <Navigation />
@@ -250,12 +277,12 @@ const Admin = () => {
                       )}
                     </Button>
                     <Button 
-                      onClick={testSearch}
-                      variant="outline"
+                      onClick={testSemanticSearch}
+                      variant="secondary"
                       className="min-w-[140px]"
                     >
-                      <Search className="h-4 w-4 mr-2" />
-                      Test Search
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Test Semantic Search
                     </Button>
                   </div>
                 </div>
