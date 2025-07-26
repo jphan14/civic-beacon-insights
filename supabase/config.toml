@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.ai-chat]
 verify_jwt = false
+
+[functions.batch-process-meetings]
+verify_jwt = false
+
+[functions.debug-api-count]
+verify_jwt = false
