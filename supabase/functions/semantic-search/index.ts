@@ -5,6 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 // Initialize Supabase client
@@ -23,11 +24,6 @@ serve(async (req) => {
 
   try {
     console.log('Semantic search request received...');
-
-    // Check if OpenAI API key is available
-    if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
-    }
 
     const { 
       query, 
@@ -48,92 +44,61 @@ serve(async (req) => {
 
     console.log(`Searching for: "${query}" with limit: ${limit}, threshold: ${threshold}`);
 
-    // Generate embedding for the search query
-    const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'text-embedding-3-small',
-        input: query,
-        encoding_format: 'float',
-      }),
-    });
-
-    if (!embeddingResponse.ok) {
-      const errorText = await embeddingResponse.text();
-      console.error('OpenAI API error:', errorText);
-      throw new Error(`OpenAI API error: ${embeddingResponse.status} - ${errorText}`);
-    }
-
-    const embeddingData = await embeddingResponse.json();
-    const queryEmbedding = embeddingData.data[0].embedding;
-
-    console.log(`Generated query embedding with ${queryEmbedding.length} dimensions`);
-
-    // Use text search as fallback since pgvector may not be properly configured
-    // This will search for relevant content containing the query terms
-    console.log('Using text-based semantic search as fallback');
+    // Simple text-based search approach
+    console.log('Using text-based semantic search');
     
     const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
+    console.log(`Search terms: ${searchTerms.join(', ')}`);
     
-    console.log(`Searching for terms: ${searchTerms.join(', ')}`);
-    
-    // Use a simpler, more reliable approach
+    // Build search query with proper error handling
     let searchQuery = supabase
       .from('document_embeddings')
       .select('meeting_id, content, content_type, metadata, created_at');
+
+    // Simple OR search for the main query and individual terms
+    const orConditions = [
+      `content.ilike.%${query}%`,
+      `metadata->>title.ilike.%${query}%`
+    ];
     
-    // Build OR conditions properly - search for each term individually
-    if (searchTerms.length > 0) {
-      const orConditions = [];
-      
-      // Add exact phrase search
-      orConditions.push(`content.ilike.%${query}%`);
-      orConditions.push(`metadata->>title.ilike.%${query}%`);
-      
-      // Add individual term searches
-      searchTerms.forEach(term => {
-        orConditions.push(`content.ilike.%${term}%`);
-      });
-      
-      searchQuery = searchQuery.or(orConditions.join(','));
-    } else {
-      // Fallback for single term
-      searchQuery = searchQuery.or(`content.ilike.%${query}%,metadata->>title.ilike.%${query}%`);
-    }
-    
-    searchQuery = searchQuery.limit(50);
+    // Add individual term searches
+    searchTerms.forEach(term => {
+      orConditions.push(`content.ilike.%${term}%`);
+    });
+
+    searchQuery = searchQuery.or(orConditions.join(','));
 
     // Add content type filter if specified
     if (content_type) {
       searchQuery = searchQuery.eq('content_type', content_type);
     }
 
-    const { data: embeddings, error: searchError } = await searchQuery;
+    searchQuery = searchQuery.limit(50);
 
-    console.log(`Search executed. Error: ${searchError?.message || 'none'}`);
-    console.log(`Raw embeddings result:`, embeddings);
+    console.log('Executing search query...');
+    const { data: embeddings, error: searchError } = await searchQuery;
 
     if (searchError) {
       console.error('Search error:', searchError);
-      throw searchError;
+      return new Response(
+        JSON.stringify({ 
+          error: 'Search failed',
+          details: searchError.message 
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     if (!embeddings || embeddings.length === 0) {
-      console.log('No embeddings found in database - returning empty results');
+      console.log('No embeddings found in database');
       return new Response(
         JSON.stringify({ 
           results: [], 
           query,
-          total_results: 0,
-          debug: {
-            searchTermsUsed: searchTerms,
-            queryExecuted: true,
-            errorMessage: searchError?.message || null
-          }
+          total_results: 0 
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -141,9 +106,9 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Found ${embeddings.length} potential matches, processing scores...`);
+    console.log(`Found ${embeddings.length} potential matches`);
 
-    // Score results based on text relevance and date matching
+    // Score results based on text relevance and specific boosts
     const results = embeddings
       .map(item => {
         let score = 0.3; // Base score
@@ -165,12 +130,6 @@ serve(async (req) => {
         // Boost for specific request types
         if (query.toLowerCase().includes('window sign') || query.toLowerCase().includes('signage')) {
           if (content.includes('window sign') || content.includes('signage')) score += 0.4;
-        }
-        
-        // Special boost for December 2024 queries
-        if (query.toLowerCase().includes('december 2024') || query.toLowerCase().includes('2024')) {
-          if (date.includes('2024-12')) score += 0.4;
-          else if (date.includes('2024')) score += 0.2;
         }
         
         // Boost for budget-related terms
@@ -198,7 +157,7 @@ serve(async (req) => {
         results,
         query,
         total_results: results.length,
-        model_used: 'text-embedding-3-small'
+        model_used: 'text-search'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
