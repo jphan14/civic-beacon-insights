@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, FileText, Archive, Info, Search } from "lucide-react";
+import { Menu, FileText, Archive, Info, Search, MessageCircle } from "lucide-react";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
     { label: "Meeting Summaries", href: "#summaries", icon: FileText },
-    { label: "Historical Archives", href: "#archives", icon: Archive },
+    { label: "Historical Archives", href: "/archive", icon: Archive },
+    { label: "AI Assistant", href: "/chat", icon: MessageCircle },
     { label: "Search", href: "#search", icon: Search },
     { label: "About", href: "#about", icon: Info },
   ];
