@@ -15,12 +15,12 @@ const Admin = () => {
 
   const checkEmbeddingCount = async () => {
     try {
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from('document_embeddings')
         .select('*', { count: 'exact', head: true });
       
       if (error) throw error;
-      setEmbeddingCount(data?.length || 0);
+      setEmbeddingCount(count || 0);
     } catch (error) {
       console.error('Error checking embeddings:', error);
       toast({
