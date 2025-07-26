@@ -79,18 +79,33 @@ serve(async (req) => {
     
     const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
     
-    // Build a more comprehensive search query
-    const exactPhrase = `content.ilike.%${query}%`;
-    const titleSearch = `metadata->>title.ilike.%${query}%`;
+    console.log(`Searching for terms: ${searchTerms.join(', ')}`);
     
-    // Also search for individual terms for partial matches
-    const individualTerms = searchTerms.map(term => `content.ilike.%${term}%`).join(',');
-    
+    // Use a simpler, more reliable approach
     let searchQuery = supabase
       .from('document_embeddings')
-      .select('meeting_id, content, content_type, metadata, created_at')
-      .or(`${exactPhrase},${titleSearch},${individualTerms}`)
-      .limit(50);
+      .select('meeting_id, content, content_type, metadata, created_at');
+    
+    // Build OR conditions properly - search for each term individually
+    if (searchTerms.length > 0) {
+      const orConditions = [];
+      
+      // Add exact phrase search
+      orConditions.push(`content.ilike.%${query}%`);
+      orConditions.push(`metadata->>title.ilike.%${query}%`);
+      
+      // Add individual term searches
+      searchTerms.forEach(term => {
+        orConditions.push(`content.ilike.%${term}%`);
+      });
+      
+      searchQuery = searchQuery.or(orConditions.join(','));
+    } else {
+      // Fallback for single term
+      searchQuery = searchQuery.or(`content.ilike.%${query}%,metadata->>title.ilike.%${query}%`);
+    }
+    
+    searchQuery = searchQuery.limit(50);
 
     // Add content type filter if specified
     if (content_type) {
@@ -133,6 +148,16 @@ serve(async (req) => {
           if (content.includes(term)) score += 0.2;
           if (title.includes(term)) score += 0.3;
         });
+        
+        // Boost for exact business names and specific terms
+        if (query.toLowerCase().includes('truefix') || query.toLowerCase().includes('tech repair')) {
+          if (content.includes('truefix') || content.includes('tech repair')) score += 0.5;
+        }
+        
+        // Boost for specific request types
+        if (query.toLowerCase().includes('window sign') || query.toLowerCase().includes('signage')) {
+          if (content.includes('window sign') || content.includes('signage')) score += 0.4;
+        }
         
         // Special boost for December 2024 queries
         if (query.toLowerCase().includes('december 2024') || query.toLowerCase().includes('2024')) {
