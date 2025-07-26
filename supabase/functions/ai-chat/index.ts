@@ -62,11 +62,19 @@ serve(async (req) => {
         }
       });
 
+      console.log('Search data received:', searchData);
+      console.log('Search error:', searchError);
+      
       if (!searchError && searchData) {
         contextResults = searchData.results || [];
         console.log(`Found ${contextResults.length} relevant documents for context`);
+        console.log('Context results preview:', contextResults.map(r => ({ 
+          meeting_id: r.meeting_id, 
+          content_preview: r.content?.substring(0, 100) + '...' 
+        })));
       } else {
         console.warn('Search request failed, proceeding without context');
+        console.warn('Search error details:', searchError);
       }
 
       // Always try civic API search for additional context, especially for budget/meeting queries
