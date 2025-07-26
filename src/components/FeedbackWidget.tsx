@@ -16,6 +16,7 @@ const FeedbackWidget = () => {
   const [contactInfo, setContactInfo] = useState("");
   const [feedbackType, setFeedbackType] = useState("general");
   const [rating, setRating] = useState<number | null>(null);
+  const [cityInterest, setCityInterest] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -41,6 +42,7 @@ const FeedbackWidget = () => {
           rating: rating,
           contact_info: contactInfo || null,
           feedback_type: feedbackType,
+          city_interest: cityInterest || null,
           page_url: window.location.href,
           user_agent: navigator.userAgent,
         });
@@ -57,6 +59,7 @@ const FeedbackWidget = () => {
       setContactInfo("");
       setFeedbackType("general");
       setRating(null);
+      setCityInterest("");
       setIsOpen(false);
     } catch (error) {
       console.error('Error submitting feedback:', error);
@@ -154,6 +157,17 @@ const FeedbackWidget = () => {
               placeholder="Your name or email (if you'd like a response)"
               value={contactInfo}
               onChange={(e) => setContactInfo(e.target.value)}
+            />
+          </div>
+
+          {/* City Interest */}
+          <div className="space-y-2">
+            <Label htmlFor="city-interest">Interested in bringing this to your city? Let us know which one. (optional)</Label>
+            <Input
+              id="city-interest"
+              placeholder="City name"
+              value={cityInterest}
+              onChange={(e) => setCityInterest(e.target.value)}
             />
           </div>
 
