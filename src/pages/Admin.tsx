@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Database, Play, CheckCircle } from "lucide-react";
+import { Loader2, Database, Play, CheckCircle, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import Navigation from "@/components/Navigation";
@@ -122,6 +122,28 @@ const Admin = () => {
     }
   };
 
+  const testSearch = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("test-search");
+      
+      if (error) throw error;
+      
+      console.log('Search Test Results:', data);
+      toast({
+        title: "Search Test Complete",
+        description: "Check console for detailed results",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Error testing search:', error);
+      toast({
+        title: "Error",
+        description: "Failed to test search",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
       <Navigation />
@@ -226,6 +248,14 @@ const Admin = () => {
                           Debug API Count
                         </>
                       )}
+                    </Button>
+                    <Button 
+                      onClick={testSearch}
+                      variant="outline"
+                      className="min-w-[140px]"
+                    >
+                      <Search className="h-4 w-4 mr-2" />
+                      Test Search
                     </Button>
                   </div>
                 </div>
