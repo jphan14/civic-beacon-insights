@@ -54,21 +54,15 @@ serve(async (req) => {
     if (search_context) {
       console.log('Performing semantic search for context...');
 
-      const searchResponse = await fetch(`${supabaseUrl}/functions/v1/semantic-search`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data: searchData, error: searchError } = await supabase.functions.invoke('semantic-search', {
+        body: {
           query: message,
           limit: max_context_results,
           threshold: 0.7,
-        }),
+        }
       });
 
-      if (searchResponse.ok) {
-        const searchData = await searchResponse.json();
+      if (!searchError && searchData) {
         contextResults = searchData.results || [];
         console.log(`Found ${contextResults.length} relevant documents for context`);
       } else {
