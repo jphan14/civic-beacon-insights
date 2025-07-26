@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 // Google Analytics measurement ID - replace with your actual ID
-const GA_MEASUREMENT_ID = 'G-XXXXXXXXXX'; // Replace with your GA4 measurement ID
+const GA_MEASUREMENT_ID = 'G-8V0WGB4KEL';
 
 declare global {
   interface Window {
