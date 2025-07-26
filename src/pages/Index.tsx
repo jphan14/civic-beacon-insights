@@ -4,6 +4,7 @@ import Features from "@/components/Features";
 import MeetingSummaries from "@/components/MeetingSummaries";
 import About from "@/components/About";
 import Footer from "@/components/Footer";
+import FeedbackWidget from "@/components/FeedbackWidget";
 
 
 const Index = () => {
@@ -16,6 +17,7 @@ const Index = () => {
       <MeetingSummaries />
       <About />
       <Footer />
+      <FeedbackWidget />
     </div>
   );
 };
