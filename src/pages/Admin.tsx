@@ -148,8 +148,8 @@ const Admin = () => {
     try {
       const { data, error } = await supabase.functions.invoke("semantic-search", {
         body: {
-          query: "TrueFix Tech Repair window sign",
-          limit: 5
+          query: "budget decisions",
+          limit: 10
         }
       });
       
