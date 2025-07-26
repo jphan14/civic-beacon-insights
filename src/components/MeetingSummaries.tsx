@@ -286,9 +286,13 @@ const MeetingSummaries = () => {
                          <span>{meeting.government_body}</span>
                        </div>
                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge variant="secondary">{meeting.government_body}</Badge>
-                        <Badge variant="outline">{meeting.document_type}</Badge>
+                       <div className="flex items-center gap-3">
+                        <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                          {meeting.commission || meeting.government_body}
+                        </Badge>
+                        <Badge variant="outline" className="capitalize">
+                          {meeting.document_type === "minutes" ? "Minutes" : meeting.document_type}
+                        </Badge>
                         {meeting.ai_enhanced && (
                           <Badge variant="default" className="bg-primary text-primary-foreground flex items-center gap-1">
                             <Bot className="h-3 w-3" />
