@@ -28,15 +28,33 @@ serve(async (req) => {
 
     console.log(`Searching for: "${query}"`);
 
+    // Check if query contains temporal terms that suggest recent documents
+    const currentYear = new Date().getFullYear();
+    const temporalTerms = ['this year', 'latest', 'recent', 'current', 'new', currentYear.toString()];
+    const isTemporalQuery = temporalTerms.some(term => query.toLowerCase().includes(term));
+    
+    console.log(`Query is temporal: ${isTemporalQuery}, Current year: ${currentYear}`);
+
     // First, try simple text search as it's more reliable
     console.log('Starting with text-based search...');
     
-    const { data: textResults, error: textError } = await supabase
+    let textQuery = supabase
       .from('document_embeddings')
       .select('meeting_id, content, content_type, metadata, created_at')
-      .or(`content.ilike.%${query}%,metadata->>title.ilike.%${query}%`)
-      .order('created_at', { ascending: false })
-      .limit(Math.min(limit * 2, 20));
+      .or(`content.ilike.%${query}%,metadata->>title.ilike.%${query}%`);
+    
+    // If it's a temporal query, prioritize recent documents (2024-2025)
+    if (isTemporalQuery) {
+      console.log('Filtering for recent documents (2024-2025)');
+      textQuery = textQuery
+        .or(`metadata->>date.gte.2024-01-01,created_at.gte.2024-01-01`)
+        .order('metadata->>date', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false });
+    } else {
+      textQuery = textQuery.order('created_at', { ascending: false });
+    }
+    
+    const { data: textResults, error: textError } = await textQuery.limit(Math.min(limit * 2, 20));
     
     if (textError) {
       console.error('Text search error:', textError);

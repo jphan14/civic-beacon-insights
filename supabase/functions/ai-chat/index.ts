@@ -133,7 +133,14 @@ ${meeting.url ? `URL: ${meeting.url}` : ''}`,
       : '';
 
     // Build the enhanced system prompt with civic-specific instructions
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
     const systemPrompt = `You are a civic assistant helping residents understand local government meetings and decisions in La Cañada Flintridge, California.
+
+CURRENT CONTEXT:
+- Today's date: ${currentDate.toDateString()}
+- Current year: ${currentYear}
+- When users ask about "this year" or "latest" information, they mean ${currentYear}
 
 CORE INSTRUCTIONS:
 - Base your responses ONLY on the provided meeting data and context documents
