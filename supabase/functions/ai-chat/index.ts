@@ -190,6 +190,28 @@ Please answer the user's question based solely on the information provided above
     if (!openAIResponse.ok) {
       const errorText = await openAIResponse.text();
       console.error('OpenAI API error:', errorText);
+      
+      // Handle rate limit specifically
+      if (openAIResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ 
+            response: "I'm currently experiencing high demand and need to wait a moment before responding. Please try your question again in a few seconds.",
+            context_documents: contextResults.length,
+            relevant_meetings: relevantMeetings,
+            source_urls: contextResults.map(r => ({
+              meeting_id: r.meeting_id,
+              url: r.metadata?.source_url || r.meeting_id,
+              title: r.metadata?.title || 'Meeting Document',
+              date: r.metadata?.date
+            })),
+            session_id 
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+      
       throw new Error(`OpenAI API error: ${openAIResponse.status} - ${errorText}`);
     }
 
