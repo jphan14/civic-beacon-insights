@@ -192,7 +192,7 @@ const MeetingSummaries = () => {
               <div className="text-sm text-muted-foreground mt-2">
                 <strong>Connected to Cloudflare API:</strong> 
                 <br />
-                <code>https://consumption-demonstrate-race-camps.trycloudflare.com</code>
+                <code>https://stocks-salon-chen-plaintiff.trycloudflare.com</code>
                 <br />
                 {statistics?.total_documents && (
                   <span>Found {statistics.total_documents} documents from {statistics.government_bodies} government bodies</span>
