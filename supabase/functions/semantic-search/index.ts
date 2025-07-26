@@ -130,7 +130,7 @@ serve(async (req) => {
           query,
           total_results: 0,
           debug: {
-            searchTerms,
+            searchTermsUsed: searchTerms,
             queryExecuted: true,
             errorMessage: searchError?.message || null
           }
