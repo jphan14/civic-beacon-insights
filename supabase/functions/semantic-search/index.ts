@@ -114,18 +114,26 @@ serve(async (req) => {
 
     const { data: embeddings, error: searchError } = await searchQuery;
 
+    console.log(`Search executed. Error: ${searchError?.message || 'none'}`);
+    console.log(`Raw embeddings result:`, embeddings);
+
     if (searchError) {
       console.error('Search error:', searchError);
       throw searchError;
     }
 
     if (!embeddings || embeddings.length === 0) {
-      console.log('No embeddings found in database');
+      console.log('No embeddings found in database - returning empty results');
       return new Response(
         JSON.stringify({ 
           results: [], 
           query,
-          total_results: 0 
+          total_results: 0,
+          debug: {
+            searchTerms,
+            queryExecuted: true,
+            errorMessage: searchError?.message || null
+          }
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -133,7 +141,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Found ${embeddings.length} potential matches`);
+    console.log(`Found ${embeddings.length} potential matches, processing scores...`);
 
     // Score results based on text relevance and date matching
     const results = embeddings
