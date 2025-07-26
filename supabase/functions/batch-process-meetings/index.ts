@@ -31,7 +31,7 @@ serve(async (req) => {
       console.log(`Fetching page ${currentPage} from civic API...`);
       
       // Fetch meetings from the civic API
-      const civicResponse = await fetch(`https://photographs-defend-athletics-alike.trycloudflare.com/api/summaries?page=${currentPage}&limit=20`);
+      const civicResponse = await fetch(`https://selecting-essentially-throughout-stupid.trycloudflare.com/api/summaries?page=${currentPage}&limit=20`);
       
       if (!civicResponse.ok) {
         throw new Error(`Failed to fetch meetings: ${civicResponse.status}`);

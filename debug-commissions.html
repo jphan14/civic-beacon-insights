@@ -13,7 +13,7 @@
             
             try {
                 // Check government bodies endpoint
-                const bodiesResponse = await fetch('https://photographs-defend-athletics-alike.trycloudflare.com/api/government-bodies');
+                const bodiesResponse = await fetch('https://selecting-essentially-throughout-stupid.trycloudflare.com/api/government-bodies');
                 const bodiesData = await bodiesResponse.json();
                 
                 output.innerHTML += '<h2>Government Bodies Endpoint:</h2>';
@@ -21,7 +21,7 @@
                 
                 // Check a few different pages for commission variety
                 for (let page = 1; page <= 5; page++) {
-                    const summariesResponse = await fetch(`https://photographs-defend-athletics-alike.trycloudflare.com/api/summaries?page=${page}&limit=20`);
+                    const summariesResponse = await fetch(`https://selecting-essentially-throughout-stupid.trycloudflare.com/api/summaries?page=${page}&limit=20`);
                     const summariesData = await summariesResponse.json();
                     
                     const commissions = [...new Set(summariesData.summaries?.map(s => s.commission))];
