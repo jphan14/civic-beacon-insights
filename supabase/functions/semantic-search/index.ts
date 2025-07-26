@@ -27,187 +27,143 @@ serve(async (req) => {
     }
 
     console.log(`Searching for: "${query}"`);
-    console.log(`Query length: ${query.length}, type: ${typeof query}`);
 
-    // First, try to generate an embedding for the query using OpenAI
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    // First, try simple text search as it's more reliable
+    console.log('Starting with text-based search...');
     
-    if (!openAIApiKey) {
-      console.warn('OpenAI API key not found, falling back to text search');
-      // Fallback to text-based search
-      const { data: textResults, error: textError } = await supabase
-        .from('document_embeddings')
-        .select('meeting_id, content, content_type, metadata, created_at')
-        .textSearch('content', query)
-        .limit(limit);
-      
-      if (textError) {
-        console.error('Text search error:', textError);
-        return new Response(
-          JSON.stringify({ error: 'Search failed', details: textError.message }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+    const { data: textResults, error: textError } = await supabase
+      .from('document_embeddings')
+      .select('meeting_id, content, content_type, metadata, created_at')
+      .or(`content.ilike.%${query}%,metadata->>title.ilike.%${query}%`)
+      .order('created_at', { ascending: false })
+      .limit(Math.min(limit * 2, 20));
+    
+    if (textError) {
+      console.error('Text search error:', textError);
+      return new Response(
+        JSON.stringify({ error: 'Search failed', details: textError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-      const results = (textResults || []).map(item => ({
+    console.log(`Text search found ${textResults?.length || 0} results`);
+
+    // If we have good text results, use them
+    if (textResults && textResults.length > 0) {
+      const results = textResults.map(item => ({
         meeting_id: item.meeting_id,
         content: item.content,
         content_type: item.content_type,
-        similarity_score: 0.8,
+        similarity_score: 0.8, // Fixed score for text search
         metadata: item.metadata,
         created_at: item.created_at,
       }));
 
+      // Return diverse results - prioritize different meetings
+      const diverseResults = [];
+      const seenMeetings = new Set();
+      
+      // First pass: add unique meetings
+      for (const result of results) {
+        if (!seenMeetings.has(result.meeting_id) && diverseResults.length < limit) {
+          diverseResults.push(result);
+          seenMeetings.add(result.meeting_id);
+        }
+      }
+      
+      // Second pass: fill remaining slots if needed
+      for (const result of results) {
+        if (diverseResults.length < limit) {
+          const existingFromSameMeeting = diverseResults.filter(r => r.meeting_id === result.meeting_id).length;
+          if (existingFromSameMeeting < 2) { // Allow up to 2 results per meeting
+            diverseResults.push(result);
+          }
+        }
+      }
+
       return new Response(
         JSON.stringify({ 
-          results: results.slice(0, limit),
+          results: diverseResults,
           query,
-          total_results: results.length,
+          total_results: diverseResults.length,
           search_type: 'text'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Generate embedding for the query
-    console.log('Generating embedding for query...');
-    const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'text-embedding-3-small',
-        input: query,
-      }),
-    });
-
-    if (!embeddingResponse.ok) {
-      console.error('OpenAI embedding failed, falling back to text search');
-      // Fallback to text search
-      const { data: fallbackResults, error: fallbackError } = await supabase
-        .from('document_embeddings')
-        .select('meeting_id, content, content_type, metadata, created_at')
-        .ilike('content', `%${query}%`)
-        .limit(limit);
-      
-      if (fallbackError) {
-        console.error('Fallback search error:', fallbackError);
-        return new Response(
-          JSON.stringify({ error: 'Search failed', details: fallbackError.message }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      const results = (fallbackResults || []).map(item => ({
-        meeting_id: item.meeting_id,
-        content: item.content,
-        content_type: item.content_type,
-        similarity_score: 0.7,
-        metadata: item.metadata,
-        created_at: item.created_at,
-      }));
-
-      return new Response(
-        JSON.stringify({ 
-          results: results.slice(0, limit),
-          query,
-          total_results: results.length,
-          search_type: 'text_fallback'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const embeddingData = await embeddingResponse.json();
-    const queryEmbedding = embeddingData.data[0].embedding;
+    // If text search fails or returns no results, try broader keywords
+    console.log('Text search found no results, trying broader search...');
     
-    console.log('Generated embedding, performing similarity search...');
-
-    // Perform similarity search using the embedding
-    const { data: embeddings, error } = await supabase.rpc('match_documents', {
-      query_embedding: queryEmbedding,
-      match_threshold: threshold,
-      match_count: limit * 2 // Get more results to ensure diversity
-    });
-
-    if (error) {
-      console.error('Vector search error:', error);
-      // Fallback to text search if vector search fails
-      const { data: fallbackResults, error: fallbackError } = await supabase
+    const broadKeywords = ['budget', 'financial', 'fiscal', 'appropriation', 'warrant', 'spending', 'revenue', 'costs'];
+    const matchingKeyword = broadKeywords.find(keyword => 
+      query.toLowerCase().includes(keyword) || keyword.includes(query.toLowerCase())
+    );
+    
+    if (matchingKeyword) {
+      console.log(`Trying broader search with keyword: ${matchingKeyword}`);
+      
+      const { data: broadResults, error: broadError } = await supabase
         .from('document_embeddings')
         .select('meeting_id, content, content_type, metadata, created_at')
-        .ilike('content', `%${query}%`)
+        .ilike('content', `%${matchingKeyword}%`)
+        .order('created_at', { ascending: false })
         .limit(limit);
       
-      if (fallbackError) {
-        console.error('Final fallback search error:', fallbackError);
+      if (!broadError && broadResults && broadResults.length > 0) {
+        const results = broadResults.map(item => ({
+          meeting_id: item.meeting_id,
+          content: item.content,
+          content_type: item.content_type,
+          similarity_score: 0.7,
+          metadata: item.metadata,
+          created_at: item.created_at,
+        }));
+
         return new Response(
-          JSON.stringify({ error: 'All search methods failed' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ 
+            results: results.slice(0, limit),
+            query,
+            total_results: results.length,
+            search_type: 'keyword_fallback'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+    }
 
-      const results = (fallbackResults || []).map(item => ({
-        meeting_id: item.meeting_id,
-        content: item.content,
-        content_type: item.content_type,
-        similarity_score: 0.7,
-        metadata: item.metadata,
-        created_at: item.created_at,
-      }));
-
+    // If still no results, return recent meetings
+    console.log('No specific matches found, returning recent meetings...');
+    
+    const { data: recentResults, error: recentError } = await supabase
+      .from('document_embeddings')
+      .select('meeting_id, content, content_type, metadata, created_at')
+      .order('created_at', { ascending: false })
+      .limit(Math.min(limit, 5));
+    
+    if (recentError) {
+      console.error('Recent search error:', recentError);
       return new Response(
-        JSON.stringify({ 
-          results: results.slice(0, limit),
-          query,
-          total_results: results.length,
-          search_type: 'text_fallback_after_vector_error'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'All search methods failed' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Vector search found ${embeddings?.length || 0} results`);
-
-    const results = (embeddings || []).map(item => ({
+    const results = (recentResults || []).map(item => ({
       meeting_id: item.meeting_id,
       content: item.content,
       content_type: item.content_type,
-      similarity_score: item.similarity,
+      similarity_score: 0.5,
       metadata: item.metadata,
       created_at: item.created_at,
     }));
 
-    // Return diverse results - prioritize different meetings
-    const diverseResults = [];
-    const seenMeetings = new Set();
-    
-    // First pass: add unique meetings with highest similarity
-    for (const result of results) {
-      if (!seenMeetings.has(result.meeting_id) && diverseResults.length < limit) {
-        diverseResults.push(result);
-        seenMeetings.add(result.meeting_id);
-      }
-    }
-    
-    // Second pass: fill remaining slots if needed
-    for (const result of results) {
-      if (diverseResults.length < limit) {
-        const existingFromSameMeeting = diverseResults.filter(r => r.meeting_id === result.meeting_id).length;
-        if (existingFromSameMeeting < 2) { // Allow up to 2 results per meeting
-          diverseResults.push(result);
-        }
-      }
-    }
-
     return new Response(
       JSON.stringify({ 
-        results: diverseResults,
+        results: results,
         query,
-        total_results: diverseResults.length,
-        search_type: 'vector'
+        total_results: results.length,
+        search_type: 'recent_fallback'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
