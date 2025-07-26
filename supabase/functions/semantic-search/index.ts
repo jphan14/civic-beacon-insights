@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { query, limit = 5 } = await req.json();
+    const { query, limit = 10, threshold = 0.7 } = await req.json();
 
     if (!query) {
       return new Response(
@@ -62,7 +62,7 @@ serve(async (req) => {
         .from('document_embeddings')
         .select('meeting_id, content, content_type, metadata, created_at')
         .ilike('content', `%${searchTerm}%`)
-        .limit(10);
+        .limit(25);
       
       console.log(`Search for "${searchTerm}" found: ${testData?.length || 0} results`);
       
@@ -93,11 +93,30 @@ serve(async (req) => {
       created_at: item.created_at,
     }));
 
+    // Return more diverse results - don't just take the first N, spread across different meetings
+    const diverseResults = [];
+    const seenMeetings = new Set();
+    
+    // First pass: add unique meetings
+    for (const result of results) {
+      if (!seenMeetings.has(result.meeting_id) && diverseResults.length < limit) {
+        diverseResults.push(result);
+        seenMeetings.add(result.meeting_id);
+      }
+    }
+    
+    // Second pass: fill remaining slots with any results
+    for (const result of results) {
+      if (diverseResults.length < limit && !diverseResults.find(r => r.meeting_id === result.meeting_id)) {
+        diverseResults.push(result);
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
-        results: results.slice(0, limit),
+        results: diverseResults,
         query,
-        total_results: results.length
+        total_results: diverseResults.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
