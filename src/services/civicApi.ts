@@ -2,7 +2,7 @@
 // Based on Lovable Integration Guide v2.0
 
 // Use Cloudflare Tunnel URL for secure access to local Civic Beacon system
-const API_BASE_URL = 'https://stocks-salon-chen-plaintiff.trycloudflare.com';
+const API_BASE_URL = 'https://ghost-locking-outstanding-lawyers.trycloudflare.com';
 
 export interface CivicSummary {
   id: string;

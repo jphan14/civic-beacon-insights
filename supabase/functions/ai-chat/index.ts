@@ -82,7 +82,7 @@ serve(async (req) => {
       
       try {
         // Search civic API for relevant meetings
-        const civicApiResponse = await fetch('https://stocks-salon-chen-plaintiff.trycloudflare.com/api/search?' + new URLSearchParams({
+        const civicApiResponse = await fetch('https://ghost-locking-outstanding-lawyers.trycloudflare.com/api/search?' + new URLSearchParams({
           q: message,
           limit: '10',
         }));
