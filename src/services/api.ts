@@ -1,5 +1,5 @@
 // Use a single, secure URL for all devices. The Cloudflare tunnel handles the rest.
-const API_BASE_URL = 'https://ghost-locking-outstanding-lawyers.trycloudflare.com';
+const API_BASE_URL = 'https://watches-yen-bridal-connect.trycloudflare.com';
 
 /**
  * Fetches the meeting summaries from the unified API endpoint.

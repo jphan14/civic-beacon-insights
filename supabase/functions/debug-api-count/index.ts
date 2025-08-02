@@ -26,7 +26,7 @@ serve(async (req) => {
     while (hasMorePages && currentPage <= maxPages) {
       console.log(`Checking page ${currentPage}...`);
       
-      const response = await fetch(`https://ghost-locking-outstanding-lawyers.trycloudflare.com/api/summaries?page=${currentPage}&limit=20`);
+      const response = await fetch(`https://watches-yen-bridal-connect.trycloudflare.com/api/summaries?page=${currentPage}&limit=20`);
       
       if (!response.ok) {
         console.log(`API error on page ${currentPage}: ${response.status}`);
