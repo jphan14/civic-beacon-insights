@@ -5,6 +5,7 @@ import MeetingSummaries from "@/components/MeetingSummaries";
 import About from "@/components/About";
 import Footer from "@/components/Footer";
 import FeedbackWidget from "@/components/FeedbackWidget";
+import DemoSection from "@/components/DemoSection";
 
 
 const Index = () => {
@@ -14,6 +15,7 @@ const Index = () => {
       <Navigation />
       <Hero />
       <Features />
+      <DemoSection />
       <MeetingSummaries />
       <About />
       <Footer />
