@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import React from "react";
 
@@ -21,39 +21,35 @@ const DemoSection: React.FC = () => {
   };
 
   return (
-    <section id="demo" aria-labelledby="demo-heading" className="bg-background">
-      <div className="container mx-auto px-4 py-12 md:py-16">
-        <header className="mb-6 md:mb-8">
-          <h2 id="demo-heading" className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">
+    <section id="demo" aria-labelledby="demo-heading" className="py-20">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center space-y-4 mb-12">
+          <h2 id="demo-heading" className="text-3xl lg:text-5xl font-bold text-foreground">
             Product Demo: See the Tool in Action
           </h2>
-          <p className="mt-2 text-muted-foreground max-w-3xl">
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Explore the key features and how it works in practice. This short video walks through summarizing
             meetings, searching by topic, and reviewing decisions quickly.
           </p>
-        </header>
+        </div>
 
-        <Card className="border">
-          <CardHeader className="pb-0">
-            <CardTitle className="text-base md:text-lg text-foreground">Watch the demo</CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
-              Learn how to navigate the interface and get the most out of the summaries and search.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <AspectRatio ratio={16 / 9}>
-              <iframe
-                src={`${YT_EMBED_URL}?rel=0`}
-                title="Product Demo"
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-                className="h-full w-full rounded-md border"
-              />
-            </AspectRatio>
-          </CardContent>
-        </Card>
+        <div className="max-w-2xl mx-auto animate-fade-in">
+          <Card className="border-border/50 shadow-card">
+            <CardContent className="pt-0">
+              <AspectRatio ratio={16 / 9}>
+                <iframe
+                  src={`${YT_EMBED_URL}?rel=0`}
+                  title="Product Demo"
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                  className="h-full w-full rounded-md"
+                />
+              </AspectRatio>
+            </CardContent>
+          </Card>
+        </div>
 
         <script
           type="application/ld+json"
