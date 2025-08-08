@@ -104,7 +104,7 @@ serve(async (req) => {
       try {
         // Fetch meetings with rate limiting
         const civicResponse = await fetchWithRateLimit(
-          `https://anytime-damaged-attempt-king.trycloudflare.com/api/summaries?page=${currentPage}&limit=20`
+          `https://clip-country-transformation-wines.trycloudflare.com/api/summaries?page=${currentPage}&limit=20`
         );
         
         const civicData = await civicResponse.json();

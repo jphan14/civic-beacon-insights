@@ -26,7 +26,7 @@ serve(async (req) => {
     while (hasMorePages && currentPage <= maxPages) {
       console.log(`Checking page ${currentPage}...`);
       
-      const response = await fetch(`https://anytime-damaged-attempt-king.trycloudflare.com/api/summaries?page=${currentPage}&limit=20`);
+      const response = await fetch(`https://clip-country-transformation-wines.trycloudflare.com/api/summaries?page=${currentPage}&limit=20`);
       
       if (!response.ok) {
         console.log(`API error on page ${currentPage}: ${response.status}`);
