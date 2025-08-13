@@ -29,6 +29,30 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
+    // Get the authorization header to verify user is authenticated
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Get user from the auth token
+    const { data: { user }, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     const { 
       message, 
       session_id,
@@ -244,6 +268,7 @@ Please answer the user's question based solely on the information provided above
             .from('chat_sessions')
             .insert({
               id: session_id,
+              user_id: user.id,
               title: message.substring(0, 100), // Use first part of message as title
               updated_at: new Date().toISOString()
             });
