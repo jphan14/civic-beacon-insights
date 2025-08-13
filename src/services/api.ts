@@ -1,5 +1,5 @@
 // Use a single, secure URL for all devices. The Cloudflare tunnel handles the rest.
-const API_BASE_URL = 'https://clip-country-transformation-wines.trycloudflare.com';
+const API_BASE_URL = 'https://grew-intro-add-peterson.trycloudflare.com';
 
 /**
  * Fetches the meeting summaries from the unified API endpoint.
